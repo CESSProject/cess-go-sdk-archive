@@ -454,7 +454,7 @@ func (fs FileSDK) FileEncrypt(encryptpath, savepath, password string) error {
 	defer f.Close()
 	filebyte, err := ioutil.ReadAll(f)
 
-	encodefile, err := tools.AesEncrypt(filebyte, []byte(password))
+	encryptfile, err := tools.AesEncrypt(filebyte, []byte(password))
 	if err != nil {
 		return errors.Wrap(err, "[Error]encrypt the file fail ,error")
 	}
@@ -471,7 +471,7 @@ func (fs FileSDK) FileEncrypt(encryptpath, savepath, password string) error {
 		return errors.Wrap(err, "[Error]An error occurred while saving the decoded file! error")
 	}
 	defer fileinfo.Close()
-	_, err = fileinfo.Write(encodefile)
+	_, err = fileinfo.Write(encryptfile)
 	if err != nil {
 		return errors.Wrap(err, "[Error]Failed to save encrypted content to file! error")
 	}

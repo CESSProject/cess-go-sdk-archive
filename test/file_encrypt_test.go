@@ -7,8 +7,8 @@ import (
 
 func TestFileEncrypt(t *testing.T) {
 	var file sdk.FileSDK
-	decryptpath, savepath, password := "", "", ""
-	err := file.FileEncrypt(decryptpath, savepath, password)
+	encryptpath, savepath, password := "", "", ""
+	err := file.FileEncrypt(encryptpath, savepath, password)
 	if err != nil {
 		t.Error(err)
 	} else {
