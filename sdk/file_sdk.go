@@ -34,8 +34,7 @@ type FileOperate interface {
 type BlockSize = int64
 
 const (
-	B_1  = BlockSize(1024)
-	KB_1 = 1024 * B_1
+	KB_1 = BlockSize(1024)
 	MB_1 = 1024 * KB_1
 	GB_1 = 1024 * MB_1
 )
@@ -166,7 +165,7 @@ func (fs FileSDK) FileUpload(block BlockSize, path, backups, privatekey string) 
 		if err != nil {
 			return errors.Wrap(err, "[Error]Error getting reply from schedule, transfer failed")
 		}
-		if res.Code != 0 {
+		if res.Code != 200 {
 			err = errors.New(res.Msg)
 			return errors.Wrap(err, "[Error]Upload file fail!scheduler problem")
 		}
@@ -175,7 +174,7 @@ func (fs FileSDK) FileUpload(block BlockSize, path, backups, privatekey string) 
 	}
 
 	if len(privatekey) != 0 {
-		if len(privatekey) != 16 || len(privatekey) != 24 || len(privatekey) != 32 {
+		if len(privatekey) != 16 && len(privatekey) != 24 && len(privatekey) != 32 {
 			return fileid, errors.New("[Error]The password must be 16,24,32 bits long")
 		}
 		encodefile, err := tools.AesEncrypt(filebyte, []byte(privatekey))
@@ -189,24 +188,18 @@ func (fs FileSDK) FileUpload(block BlockSize, path, backups, privatekey string) 
 			blocktotal = blocks + 1
 		}
 		blockinfo.Blocks = int32(blocktotal)
-		var bar tools.Bar
-		bar.NewOption(0, int64(blocktotal))
 		for i := 0; i < blocktotal; i++ {
 			block := make([]byte, 0)
 			if blocks != i {
 				block = encodefile[i*blocksize : (i+1)*blocksize]
-				bar.Play(int64(i + 1))
 			} else {
 				block = encodefile[i*blocksize:]
-				bar.Play(int64(i + 1))
 			}
 			err = commit(i, block)
 			if err != nil {
-				bar.Finish()
 				return fileid, errors.Wrap(err, "[Error]:Failed to upload the file error")
 			}
 		}
-		bar.Finish()
 	} else {
 		fmt.Printf("%s[Tips]%s:upload file:%s without private key", tools.Yellow, tools.Reset, path)
 		blocks := len(filebyte) / blocksize
@@ -216,24 +209,18 @@ func (fs FileSDK) FileUpload(block BlockSize, path, backups, privatekey string) 
 			blocktotal = blocks + 1
 		}
 		blockinfo.Blocks = int32(blocktotal)
-		var bar tools.Bar
-		bar.NewOption(0, int64(blocktotal))
 		for i := 0; i < blocktotal; i++ {
 			block := make([]byte, 0)
 			if blocks != i {
 				block = filebyte[i*blocksize : (i+1)*blocksize]
-				bar.Play(int64(i + 1))
 			} else {
 				block = filebyte[i*blocksize:]
-				bar.Play(int64(i + 1))
 			}
 			err = commit(i, block)
 			if err != nil {
-				bar.Finish()
 				return fileid, errors.Wrap(err, "[Error]:Failed to upload the file error")
 			}
 		}
-		bar.Finish()
 	}
 	fmt.Printf("%s[Success]%s:upload file:%s successful!", tools.Green, tools.Reset, path)
 	return fileid, nil
@@ -309,8 +296,6 @@ func (fs FileSDK) FileDownload(fileid, installpath string) error {
 	}
 
 	var wantfile module.FileDownloadReq
-	var bar tools.Bar
-	var getAllBar sync.Once
 	sp := sync.Pool{
 		New: func() interface{} {
 			return &rpc.ReqMsg{}
@@ -339,7 +324,7 @@ func (fs FileSDK) FileDownload(fileid, installpath string) error {
 
 		var respbody rpc.RespBody
 		err = proto.Unmarshal(resp.Body, &respbody)
-		if err != nil || respbody.Code != 0 {
+		if err != nil || respbody.Code != 200 {
 			return errors.Wrap(err, "[Error]Download file from CESS reply message"+respbody.Msg+",error")
 		}
 		var blockData module.FileDownloadInfo
@@ -353,10 +338,6 @@ func (fs FileSDK) FileDownload(fileid, installpath string) error {
 			return errors.Wrap(err, "[Error]:Failed to write file's block to file error")
 		}
 
-		getAllBar.Do(func() {
-			bar.NewOption(0, int64(blockData.BlockNum))
-		})
-		bar.Play(int64(blockData.Blocks))
 		wantfile.Blocks++
 		sp.Put(req)
 		if blockData.Blocks == blockData.BlockNum {
@@ -364,7 +345,6 @@ func (fs FileSDK) FileDownload(fileid, installpath string) error {
 		}
 	}
 
-	bar.Finish()
 	return nil
 }
 
@@ -393,7 +373,7 @@ func (fs FileSDK) FileDelete(fileid string) error {
 When you download the file if it is not decode, you can decode it this way
 */
 func (fs FileSDK) FileDecrypt(decryptpath, savepath, password string) error {
-	if len(password) != 16 || len(password) != 24 || len(password) != 32 {
+	if len(password) != 16 && len(password) != 24 && len(password) != 32 {
 		return errors.New("[Error]The password must be 16,24,32 bits long")
 	}
 	_, err := os.Stat(decryptpath)
@@ -439,7 +419,7 @@ func (fs FileSDK) FileDecrypt(decryptpath, savepath, password string) error {
 You can encrypt files yourself
 */
 func (fs FileSDK) FileEncrypt(encryptpath, savepath, password string) error {
-	if len(password) != 16 || len(password) != 24 || len(password) != 32 {
+	if len(password) != 16 && len(password) != 24 && len(password) != 32 {
 		return errors.New("[Error]The password must be 16,24,32 bits long")
 	}
 	_, err := os.Stat(encryptpath)

@@ -104,7 +104,7 @@ func (fs FindSDK) FindFile(fileid string) (result.FileInfo, error) {
 		err = errors.New("[Fail]This file may have been deleted by someone")
 		return fileinfo, err
 	}
-	fileinfo.File_Name = string(data.File_Name[:])
+	fileinfo.FileName = string(data.File_Name[:])
 	fileinfo.FileHash = string(data.FileHash[:])
 	fileinfo.Public = bool(data.Public)
 	fileinfo.Backups = int8(data.Backups)
@@ -114,10 +114,11 @@ func (fs FindSDK) FindFile(fileid string) (result.FileInfo, error) {
 	return fileinfo, nil
 }
 
-func (fs FindSDK) FindFileList() ([][]byte, error) {
+func (fs FindSDK) FindFileList() ([]result.FindFileList, error) {
 	chain.Chain_Init(fs.ChainData.CessRpcAddr)
 
 	var ci chain.CessInfo
+	filelist := make([]result.FindFileList, 0)
 	ci.RpcAddr = fs.ChainData.CessRpcAddr
 	ci.ChainModule = chain.FindFileChainModule
 	ci.ChainModuleMethod = chain.FindFileModuleMethod[1]
@@ -125,5 +126,10 @@ func (fs FindSDK) FindFileList() ([][]byte, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "[Error]Get file list fail")
 	}
-	return data, nil
+	for _, v := range data {
+		var fileresult result.FindFileList
+		fileresult.FileId = string(v)
+		filelist = append(filelist, fileresult)
+	}
+	return filelist, nil
 }
