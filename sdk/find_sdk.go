@@ -12,9 +12,10 @@ type FindSDK struct {
 }
 
 type FindOperate interface {
-	FindPurchasedSpace() (chain.UserHoldSpaceDetails, error)
+	FindPurchasedSpace() (result.UserHoldSpaceDetails, error)
 	FindPrice() (float64, error)
-	FindFile(fileid string) (interface{}, error)
+	FindFile(string) (result.FileInfo, error)
+	FindFileList() ([][]byte, error)
 }
 
 /*

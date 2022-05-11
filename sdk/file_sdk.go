@@ -24,10 +24,11 @@ type FileSDK struct {
 	config.CessConf
 }
 type FileOperate interface {
-	FileUpload(blocksize BlockSize, path, backups, privatekey string) (string, error)
-	FileDownload(fileid string) error
-	FileDelete(fileid string) error
-	FileDecode(path string) error
+	FileUpload(BlockSize, string, string, string) (string, error)
+	FileDownload(string, string) error
+	FileDelete(string) error
+	FileDecrypt(string, string, string) error
+	FileEncrypt(string, string, string) error
 }
 
 type BlockSize = int64
@@ -174,7 +175,9 @@ func (fs FileSDK) FileUpload(block BlockSize, path, backups, privatekey string) 
 	}
 
 	if len(privatekey) != 0 {
-
+		if len(privatekey) != 16 || len(privatekey) != 24 || len(privatekey) != 32 {
+			return fileid, errors.New("[Error]The password must be 16,24,32 bits long")
+		}
 		encodefile, err := tools.AesEncrypt(filebyte, []byte(privatekey))
 		if err != nil {
 			return fileid, errors.Wrap(err, "[Error]Encode the file fail ,error")
@@ -389,17 +392,20 @@ func (fs FileSDK) FileDelete(fileid string) error {
 /*
 When you download the file if it is not decode, you can decode it this way
 */
-func (fs FileSDK) FileDecode(decodepath, savepath, password string) error {
-	_, err := os.Stat(decodepath)
+func (fs FileSDK) FileDecrypt(decryptpath, savepath, password string) error {
+	if len(password) != 16 || len(password) != 24 || len(password) != 32 {
+		return errors.New("[Error]The password must be 16,24,32 bits long")
+	}
+	_, err := os.Stat(decryptpath)
 	if err != nil {
-		_ = errors.Wrap(err, "[Error]There is no such file, please confirm the correct location of the file, please enter the absolute path of the file")
+		_ = errors.Wrap(err, "[Error]There is no such file, please confirm the correct location of the file,and enter the absolute path of the file")
 		return err
 	}
 
 	//fmt.Println("Please enter the file's password:")
 	//fmt.Print(">")
 	//psw, _ := gopass.GetPasswdMasked()
-	encodefile, err := ioutil.ReadFile(decodepath)
+	encodefile, err := ioutil.ReadFile(decryptpath)
 	if err != nil {
 		return errors.Wrap(err, "[Error]Failed to read file, please check file integrity")
 	}
@@ -408,10 +414,10 @@ func (fs FileSDK) FileDecode(decodepath, savepath, password string) error {
 	if err != nil {
 		return errors.Wrap(err, "[Error]File decode failed, please check your password! error")
 	}
-	filename := filepath.Base(decodepath)
+	filename := filepath.Base(decryptpath)
 	//The decoded file is saved to the download folder, if the name is the same, the original file will be deleted
-	if decodepath == filepath.Join(savepath, filename) {
-		err = os.Remove(decodepath)
+	if decryptpath == filepath.Join(savepath, filename) {
+		err = os.Remove(decryptpath)
 		if err != nil {
 			return errors.Wrap(err, "[Error]An error occurred while saving the decoded file! error")
 		}
@@ -424,6 +430,50 @@ func (fs FileSDK) FileDecode(decodepath, savepath, password string) error {
 	_, err = fileinfo.Write(decodefile)
 	if err != nil {
 		return errors.Wrap(err, "[Error]Failed to save decrypted content to file! error")
+	}
+
+	return nil
+}
+
+/*
+You can encrypt files yourself
+*/
+func (fs FileSDK) FileEncrypt(encryptpath, savepath, password string) error {
+	if len(password) != 16 || len(password) != 24 || len(password) != 32 {
+		return errors.New("[Error]The password must be 16,24,32 bits long")
+	}
+	_, err := os.Stat(encryptpath)
+	if err != nil {
+		_ = errors.Wrap(err, "[Error]There is no such file, please confirm the correct location of the file,and enter the absolute path of the file")
+		return err
+	}
+	f, err := os.Open(encryptpath)
+	if err != nil {
+		return errors.Wrap(err, "[Error]This file was broken")
+	}
+	defer f.Close()
+	filebyte, err := ioutil.ReadAll(f)
+
+	encodefile, err := tools.AesEncrypt(filebyte, []byte(password))
+	if err != nil {
+		return errors.Wrap(err, "[Error]encrypt the file fail ,error")
+	}
+	filename := filepath.Base(encryptpath)
+	//The decoded file is saved to the download folder, if the name is the same, the original file will be deleted
+	if encryptpath == filepath.Join(savepath, filename) {
+		err = os.Remove(encryptpath)
+		if err != nil {
+			return errors.Wrap(err, "[Error]An error occurred while saving the decoded file! error")
+		}
+	}
+	fileinfo, err := os.Create(filepath.Join(savepath, filename))
+	if err != nil {
+		return errors.Wrap(err, "[Error]An error occurred while saving the decoded file! error")
+	}
+	defer fileinfo.Close()
+	_, err = fileinfo.Write(encodefile)
+	if err != nil {
+		return errors.Wrap(err, "[Error]Failed to save encrypted content to file! error")
 	}
 
 	return nil

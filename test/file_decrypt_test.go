@@ -5,10 +5,10 @@ import (
 	"testing"
 )
 
-func TestFileDecode(t *testing.T) {
+func TestFileDecrypt(t *testing.T) {
 	var file sdk.FileSDK
-	decodepath, savepath, password := "", "", ""
-	err := file.FileDecode(decodepath, savepath, password)
+	decryptpath, savepath, password := "", "", ""
+	err := file.FileDecrypt(decryptpath, savepath, password)
 	if err != nil {
 		t.Error(err)
 	} else {

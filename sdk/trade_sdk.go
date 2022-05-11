@@ -12,8 +12,8 @@ type TradeSDK struct {
 	config.CessConf
 }
 type TradeOperate interface {
-	ObtainFromFaucet(pbk string) error
-	Expansion(quantity, duration, expected int) error
+	ObtainFromFaucet(string) error
+	Expansion(int, int, int) error
 }
 
 type faucet struct {
