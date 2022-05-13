@@ -6,10 +6,10 @@ import (
 )
 
 func TestFindFile(t *testing.T) {
-	var find sdk.FindSDK
+	var find sdk.QuerySDK
 	find.ChainData.CessRpcAddr = ""
 	fileid := ""
-	fileinfo, err := find.FindFile(fileid)
+	fileinfo, err := find.QueryFile(fileid)
 	if err != nil {
 		t.Error(err)
 	} else {
@@ -18,10 +18,10 @@ func TestFindFile(t *testing.T) {
 }
 
 func TestFindFileList(t *testing.T) {
-	var find sdk.FindSDK
+	var find sdk.QuerySDK
 	find.ChainData.CessRpcAddr = ""
 	find.ChainData.AccountPublicKey = ""
-	filelist, err := find.FindFileList()
+	filelist, err := find.QueryFileList()
 	if err != nil {
 		t.Error(err)
 	} else {

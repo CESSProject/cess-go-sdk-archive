@@ -6,7 +6,7 @@ import (
 )
 
 func TestObtainFromFaucet(t *testing.T) {
-	var trade sdk.TradeSDK
+	var trade sdk.PurchaseSDK
 	trade.CessConf.ChainData.FaucetAddress = ""
 	AccountPublicKey := ""
 	err := trade.ObtainFromFaucet(AccountPublicKey)

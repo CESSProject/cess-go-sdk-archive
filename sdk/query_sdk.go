@@ -7,21 +7,21 @@ import (
 	"github.com/pkg/errors"
 )
 
-type FindSDK struct {
+type QuerySDK struct {
 	config.CessConf
 }
 
-type FindOperate interface {
-	FindPurchasedSpace() (result.UserHoldSpaceDetails, error)
-	FindPrice() (float64, error)
-	FindFile(string) (result.FileInfo, error)
-	FindFileList() ([][]byte, error)
+type QueryOperate interface {
+	QueryPurchasedSpace() (result.UserHoldSpaceDetails, error)
+	QueryPrice() (float64, error)
+	QueryFile(string) (result.FileInfo, error)
+	QueryFileList() ([]result.FindFileList, error)
 }
 
 /*
 FindPurchasedSpace means to query the space that the current user has purchased and the space that has been used
 */
-func (fs FindSDK) FindPurchasedSpace() (result.UserHoldSpaceDetails, error) {
+func (fs QuerySDK) QueryPurchasedSpace() (result.UserHoldSpaceDetails, error) {
 	var userinfo result.UserHoldSpaceDetails
 	err := chain.Chain_Init(fs.ChainData.CessRpcAddr)
 	if err != nil {
@@ -44,9 +44,9 @@ func (fs FindSDK) FindPurchasedSpace() (result.UserHoldSpaceDetails, error) {
 }
 
 /*
-FindPrice means to get real-time price of storage space
+QueryPrice means to get real-time price of storage space
 */
-func (fs FindSDK) FindPrice() (float64, error) {
+func (fs QuerySDK) QueryPrice() (float64, error) {
 	chain.Chain_Init(fs.ChainData.CessRpcAddr)
 
 	var ci chain.CessInfo
@@ -84,10 +84,10 @@ func (fs FindSDK) FindPrice() (float64, error) {
 }
 
 /*
-FindFile means to query the files uploaded by the current user
+QueryFile means to query the files uploaded by the current user
 fileid:fileid of the file to look for
 */
-func (fs FindSDK) FindFile(fileid string) (result.FileInfo, error) {
+func (fs QuerySDK) QueryFile(fileid string) (result.FileInfo, error) {
 	var fileinfo result.FileInfo
 	chain.Chain_Init(fs.ChainData.CessRpcAddr)
 
@@ -114,7 +114,7 @@ func (fs FindSDK) FindFile(fileid string) (result.FileInfo, error) {
 	return fileinfo, nil
 }
 
-func (fs FindSDK) FindFileList() ([]result.FindFileList, error) {
+func (fs QuerySDK) QueryFileList() ([]result.FindFileList, error) {
 	chain.Chain_Init(fs.ChainData.CessRpcAddr)
 
 	var ci chain.CessInfo

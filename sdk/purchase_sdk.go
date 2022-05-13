@@ -5,10 +5,11 @@ import (
 	"cess-go-sdk/internal/chain"
 	"cess-go-sdk/tools"
 	"encoding/json"
+	"fmt"
 	"github.com/pkg/errors"
 )
 
-type TradeSDK struct {
+type PurchaseSDK struct {
 	config.CessConf
 }
 type TradeOperate interface {
@@ -29,7 +30,7 @@ type answer struct {
 ObtainFromFaucet means to obtain tCESS for transaction spending through the faucet
 pbk:wallet's public key
 */
-func (ts TradeSDK) ObtainFromFaucet(pbk string) error {
+func (ts PurchaseSDK) ObtainFromFaucet(pbk string) error {
 	var ob = struct {
 		Address string `json:"Address"`
 	}{
@@ -45,8 +46,10 @@ func (ts TradeSDK) ObtainFromFaucet(pbk string) error {
 		return errors.Wrap(err, "unmarshal error")
 	}
 	if res.Ans.Err != "" {
+		err = errors.New(res.Ans.Err)
 		return errors.Wrap(err, "[Error]Obtain from faucet fail")
 	}
+	fmt.Println(res)
 
 	if res.Ans.AsInBlock {
 		return nil
@@ -61,7 +64,7 @@ quantity:The amount of space to be purchased (1/G)
 duration:Market for space that needs to be purchased (1/month)
 expected:The expected number of prices when buying is required to prevent price fluctuations when buying. When it is 0, it means that any price can be accepted
 */
-func (ts TradeSDK) Expansion(quantity, duration, expected int) error {
+func (ts PurchaseSDK) Expansion(quantity, duration, expected int) error {
 	chain.Chain_Init(ts.ChainData.CessRpcAddr)
 
 	var ci chain.CessInfo

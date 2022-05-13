@@ -6,9 +6,9 @@ import (
 )
 
 func TestFindPrice(t *testing.T) {
-	var find sdk.FindSDK
+	var find sdk.QuerySDK
 	find.ChainData.CessRpcAddr = ""
-	spaceprice, err := find.FindPrice()
+	spaceprice, err := find.QueryPrice()
 	if err != nil {
 		t.Error(err)
 	} else {

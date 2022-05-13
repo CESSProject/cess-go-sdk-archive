@@ -6,7 +6,7 @@ import (
 )
 
 func TestExpansion(t *testing.T) {
-	var trade sdk.TradeSDK
+	var trade sdk.PurchaseSDK
 	trade.ChainData.CessRpcAddr = ""
 	trade.ChainData.IdAccountPhraseOrSeed = ""
 	QuantityOfSpaceYouWantToBuy := 1

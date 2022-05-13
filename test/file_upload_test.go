@@ -11,7 +11,7 @@ func TestFileUpload(t *testing.T) {
 	file.ChainData.IdAccountPhraseOrSeed = ""
 	file.ChainData.WalletAddress = ""
 	//When sending a file, send it as a file block of 2kb
-	blocksize := sdk.KB_1 * sdk.BlockSize(2)
+	blocksize := sdk.MB_1 * sdk.BlockSize(1)
 	path := ""
 	backups := ""
 	privatekey := ""
