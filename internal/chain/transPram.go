@@ -51,6 +51,7 @@ type FileInfo struct {
 type FileDuplicateInfo struct {
 	MinerId   types.U64
 	BlockNum  types.U32
+	ScanSize  types.U32
 	Acc       types.AccountID
 	MinerIp   types.Bytes
 	DuplId    types.Bytes
@@ -58,9 +59,8 @@ type FileDuplicateInfo struct {
 	BlockInfo []BlockInfo
 }
 type BlockInfo struct {
-	BlockIndex    types.U32
-	BlockSize     types.U32
-	ScanBlockSize types.U32
+	BlockIndex types.U32
+	BlockSize  types.U32
 }
 
 type FileList struct {
