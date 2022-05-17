@@ -50,39 +50,8 @@ func (userinfo UserHoldSpaceDetails) String() string {
 	return ret
 }
 
-//GetPurchasedSpace means the size of the space purchased by all customers of the whole CESS system
-func (ci *CessInfo) GetPurchasedSpace() (types.U128, error) {
-	var (
-		err  error
-		data types.U128
-	)
-	api.getSubstrateApiSafe()
-	defer func() {
-		api.releaseSubstrateApi()
-		err := recover()
-		if err != nil {
-			fmt.Printf("[Error]Recover UserHoldSpaceDetails panic :%s\n", err)
-		}
-	}()
-	meta, err := api.r.RPC.State.GetMetadataLatest()
-	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", ci.ChainModule, ci.ChainModuleMethod)
-	}
-
-	key, err := types.CreateStorageKey(meta, ci.ChainModule, ci.ChainModuleMethod)
-	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", ci.ChainModule, ci.ChainModuleMethod)
-	}
-
-	_, err = api.r.RPC.State.GetStorageLatest(key, &data)
-	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", ci.ChainModule, ci.ChainModuleMethod)
-	}
-	return data, nil
-}
-
-//GetAvailableSpace Means the purchaseable space of the whole CESS system
-func (ci *CessInfo) GetAvailableSpace() (types.U128, error) {
+//GetPrice means the size of the space purchased by all customers of the whole CESS system
+func (ci *CessInfo) GetPrice() (types.U128, error) {
 	var (
 		err  error
 		data types.U128

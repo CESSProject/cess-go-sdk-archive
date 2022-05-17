@@ -101,20 +101,20 @@ func (fs FileSDK) FileUpload(block BlockSize, path, backups, privatekey string) 
 	if err != nil {
 		return "", errors.Wrap(err, "[Error]Get scheduler randomly error")
 	}
-	filesize := new(big.Int)
+	//filesize := new(big.Int)
 	fee := new(big.Int)
 
 	ci.IdentifyAccountPhrase = fs.ChainData.IdAccountPhraseOrSeed
 	ci.TransactionName = chain.UploadFileTransactionName
 
-	if file.Size()/1024 == 0 {
-		filesize.SetInt64(1)
-	} else {
-		filesize.SetInt64(file.Size() / 1024)
-	}
+	//if file.Size()/1024 == 0 {
+	//	filesize.SetInt64(1)
+	//} else {
+	//	filesize.SetInt64(file.Size() / 1024)
+	//}
 	fee.SetInt64(int64(0))
 
-	_, err = ci.UploadFileMetaInformation(fileid, file.Name(), filehash, privatekey == "", uint8(spares), filesize, fee, fs.ChainData.WalletAddress)
+	_, err = ci.UploadFileMetaInformation(fileid, file.Name(), filehash, privatekey == "", uint8(spares), uint64(file.Size()), fee, fs.ChainData.WalletAddress)
 	if err != nil {
 		return "", errors.Wrap(err, "[Error]Upload file meta information error")
 	}

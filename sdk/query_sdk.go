@@ -5,6 +5,7 @@ import (
 	"cess-go-sdk/internal/chain"
 	"cess-go-sdk/module/result"
 	"github.com/pkg/errors"
+	"strconv"
 )
 
 type QuerySDK struct {
@@ -53,34 +54,16 @@ func (fs QuerySDK) QueryPrice() (float64, error) {
 	ci.RpcAddr = fs.ChainData.CessRpcAddr
 	ci.ChainModule = chain.FindPriceChainModule
 
-	ci.ChainModuleMethod = chain.FindPriceModuleMethod[0]
-	AllPurchased, err := ci.GetPurchasedSpace()
+	ci.ChainModuleMethod = chain.FindPriceModuleMethod
+	Price, err := ci.GetPrice()
 	if err != nil {
-		return 0, errors.Wrap(err, "[Error]Get all purchased fail")
+		return 0, errors.Wrap(err, "[Error]Get price fail")
 	}
-
-	ci.ChainModuleMethod = chain.FindPriceModuleMethod[1]
-	AllAvailable, err := ci.GetAvailableSpace()
+	PerMB, err := strconv.ParseFloat(strconv.FormatInt(Price.Int64()*1024, 10), 64)
 	if err != nil {
-		return 0, errors.Wrap(err, "[Error]Get all available fail")
+		return 0, errors.Wrap(err, "[Error]Get price fail,wrong chain data")
 	}
-
-	var purc int64
-	var ava int64
-	if AllPurchased.Int != nil {
-		purc = AllPurchased.Int64()
-	}
-	if AllAvailable.Int != nil {
-		ava = AllAvailable.Int64()
-	}
-	if purc == ava {
-		err = errors.New("[Success]All space has been bought,The current storage price is:+∞ per (MB)")
-		return 0, err
-	}
-
-	price := (1024 / float64((ava - purc))) * 1000
-
-	return price, nil
+	return PerMB, nil
 }
 
 /*
