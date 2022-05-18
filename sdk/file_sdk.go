@@ -302,7 +302,7 @@ func (fs FileSDK) FileDownload(fileid, installpath string) error {
 		},
 	}
 	wantfile.FileId = fileid
-	wantfile.WalletAddress = fs.ChainData.AccountPublicKey
+	wantfile.WalletAddress = fs.ChainData.WalletAddress
 	wantfile.Blocks = 1
 
 	for {
