@@ -28,13 +28,18 @@ type answer struct {
 
 /*
 ObtainFromFaucet means to obtain tCESS for transaction spending through the faucet
-pbk:wallet's public key
+walletaddress:wallet address
 */
-func (ts PurchaseSDK) ObtainFromFaucet(pbk string) error {
+func (ts PurchaseSDK) ObtainFromFaucet(walletaddress string) error {
+	pubkey, err := tools.DecodeToPub(walletaddress, tools.ChainCessTestPrefix)
+	if err != nil {
+		fmt.Printf("[Error]The wallet address you entered is incorrect, please re-enter:%v\n", err.Error())
+		return err
+	}
 	var ob = struct {
 		Address string `json:"Address"`
 	}{
-		pbk,
+		tools.PubBytesTo0XString(pubkey),
 	}
 	var res faucet
 	resp, err := tools.Post(ts.ChainData.FaucetAddress, ob)

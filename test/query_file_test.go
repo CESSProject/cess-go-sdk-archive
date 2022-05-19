@@ -20,7 +20,6 @@ func TestFindFile(t *testing.T) {
 func TestFindFileList(t *testing.T) {
 	var find sdk.QuerySDK
 	find.ChainData.CessRpcAddr = ""
-	find.ChainData.AccountPublicKey = ""
 	filelist, err := find.QueryFileList()
 	if err != nil {
 		t.Error(err)

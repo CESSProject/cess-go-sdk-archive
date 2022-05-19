@@ -4,6 +4,8 @@ import (
 	"cess-go-sdk/config"
 	"cess-go-sdk/internal/chain"
 	"cess-go-sdk/module/result"
+	"cess-go-sdk/tools"
+	"fmt"
 	"github.com/pkg/errors"
 	"strconv"
 )
@@ -33,8 +35,12 @@ func (fs QuerySDK) QueryPurchasedSpace() (result.UserHoldSpaceDetails, error) {
 	ci.RpcAddr = fs.ChainData.CessRpcAddr
 	ci.ChainModule = chain.PurchasedSpaceChainModule
 	ci.ChainModuleMethod = chain.PurchasedSpaceModuleMethod
-
-	details, err := ci.UserHoldSpaceDetails(fs.ChainData.AccountPublicKey)
+	pubkey, err := tools.DecodeToPub(fs.ChainData.WalletAddress, tools.ChainCessTestPrefix)
+	if err != nil {
+		fmt.Printf("[Error]The wallet address you entered is incorrect, please re-enter:%v\n", err.Error())
+		return userinfo, err
+	}
+	details, err := ci.UserHoldSpaceDetails(tools.PubBytesTo0XString(pubkey))
 	if err != nil {
 		return userinfo, errors.Wrap(err, "[Error]Get user data fail")
 	}
@@ -105,7 +111,13 @@ func (fs QuerySDK) QueryFileList() ([]result.FindFileList, error) {
 	ci.RpcAddr = fs.ChainData.CessRpcAddr
 	ci.ChainModule = chain.FindFileChainModule
 	ci.ChainModuleMethod = chain.FindFileModuleMethod[1]
-	data, err := ci.GetFileList(fs.ChainData.AccountPublicKey)
+	pubkey, err := tools.DecodeToPub(fs.ChainData.WalletAddress, tools.ChainCessTestPrefix)
+	if err != nil {
+		fmt.Printf("[Error]The wallet address you entered is incorrect, please re-enter:%v\n", err.Error())
+		return filelist, err
+	}
+
+	data, err := ci.GetFileList(tools.PubBytesTo0XString(pubkey))
 	if err != nil {
 		return nil, errors.Wrap(err, "[Error]Get file list fail")
 	}
