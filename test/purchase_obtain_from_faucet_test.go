@@ -8,8 +8,8 @@ import (
 func TestObtainFromFaucet(t *testing.T) {
 	var trade sdk.PurchaseSDK
 	trade.CessConf.ChainData.FaucetAddress = ""
-	AccountPublicKey := ""
-	err := trade.ObtainFromFaucet(AccountPublicKey)
+	WalletAddress := ""
+	err := trade.ObtainFromFaucet(WalletAddress)
 	if err != nil {
 		t.Error(err)
 	} else {
