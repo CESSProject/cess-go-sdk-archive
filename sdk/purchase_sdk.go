@@ -71,7 +71,9 @@ expected:The expected number of prices when buying is required to prevent price 
 */
 func (ts PurchaseSDK) Expansion(quantity, duration, expected int) error {
 	chain.Chain_Init(ts.ChainData.CessRpcAddr)
-
+	if quantity == 0 || duration == 0 {
+		return errors.New("Please enter the correct purchase number")
+	}
 	var ci chain.CessInfo
 	ci.RpcAddr = ts.ChainData.CessRpcAddr
 	ci.IdentifyAccountPhrase = ts.ChainData.IdAccountPhraseOrSeed

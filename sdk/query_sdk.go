@@ -44,9 +44,14 @@ func (fs QuerySDK) QueryPurchasedSpace() (result.UserHoldSpaceDetails, error) {
 	if err != nil {
 		return userinfo, errors.Wrap(err, "[Error]Get user data fail")
 	}
-	userinfo.PurchasedSpace = details.PurchasedSpace.String()
-	userinfo.UsedSpace = details.UsedSpace.String()
-	userinfo.RemainingSpace = details.RemainingSpace.String()
+	if details.UsedSpace.Int64()/1024/1024 == 0 && details.UsedSpace.Int64() != 0 {
+		details.UsedSpace.SetInt64(1)
+	} else {
+		details.UsedSpace.SetInt64(details.UsedSpace.Int64() / 1024 / 1024)
+	}
+	userinfo.PurchasedSpace = strconv.FormatInt(details.PurchasedSpace.Int64()/1024/1024, 10)
+	userinfo.UsedSpace = strconv.FormatInt(details.UsedSpace.Int64(), 10)
+	userinfo.RemainingSpace = strconv.FormatInt(details.RemainingSpace.Int64()/1024/1024, 10)
 	return userinfo, nil
 }
 
@@ -65,11 +70,11 @@ func (fs QuerySDK) QueryPrice() (float64, error) {
 	if err != nil {
 		return 0, errors.Wrap(err, "[Error]Get price fail")
 	}
-	PerMB, err := strconv.ParseFloat(strconv.FormatInt(Price.Int64()*1024, 10), 64)
+	PerGB, _ := strconv.ParseFloat(fmt.Sprintf("%.12f", float64(Price.Int64()*int64(1024))/float64(1000000000000)), 64)
 	if err != nil {
 		return 0, errors.Wrap(err, "[Error]Get price fail,wrong chain data")
 	}
-	return PerMB, nil
+	return PerGB, nil
 }
 
 /*

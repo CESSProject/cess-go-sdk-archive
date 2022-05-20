@@ -142,7 +142,7 @@ func (fs FileSDK) FileUpload(block BlockSize, path, backups, privatekey string) 
 		},
 	}
 	commit := func(num int, data []byte) error {
-		blockinfo.BlockNum = int32(num) + 1
+		blockinfo.BlockIndex = int32(num) + 1
 		blockinfo.Data = data
 		info, err := proto.Marshal(&blockinfo)
 		if err != nil {
@@ -174,7 +174,7 @@ func (fs FileSDK) FileUpload(block BlockSize, path, backups, privatekey string) 
 	}
 
 	if len(privatekey) != 0 {
-		if len(privatekey) != 16 && len(privatekey) != 24 && len(privatekey) != 32 {
+		if len(privatekey) != 16 && len(privatekey) != 24 && len(privatekey) != 32 && len(privatekey) != 0 {
 			return fileid, errors.New("[Error]The password must be 16,24,32 bits long")
 		}
 		encodefile, err := tools.AesEncrypt(filebyte, []byte(privatekey))
@@ -187,7 +187,7 @@ func (fs FileSDK) FileUpload(block BlockSize, path, backups, privatekey string) 
 		} else {
 			blocktotal = blocks + 1
 		}
-		blockinfo.Blocks = int32(blocktotal)
+		blockinfo.BlockTotal = int32(blocktotal)
 		for i := 0; i < blocktotal; i++ {
 			block := make([]byte, 0)
 			if blocks != i {
@@ -208,7 +208,7 @@ func (fs FileSDK) FileUpload(block BlockSize, path, backups, privatekey string) 
 		} else {
 			blocktotal = blocks + 1
 		}
-		blockinfo.Blocks = int32(blocktotal)
+		blockinfo.BlockTotal = int32(blocktotal)
 		for i := 0; i < blocktotal; i++ {
 			block := make([]byte, 0)
 			if blocks != i {
@@ -303,7 +303,7 @@ func (fs FileSDK) FileDownload(fileid, installpath string) error {
 	}
 	wantfile.FileId = fileid
 	wantfile.WalletAddress = fs.ChainData.WalletAddress
-	wantfile.Blocks = 1
+	wantfile.BlockIndex = 1
 
 	for {
 		data, err := proto.Marshal(&wantfile)
@@ -338,9 +338,9 @@ func (fs FileSDK) FileDownload(fileid, installpath string) error {
 			return errors.Wrap(err, "[Error]:Failed to write file's block to file error")
 		}
 
-		wantfile.Blocks++
+		wantfile.BlockIndex++
 		sp.Put(req)
-		if blockData.Blocks == blockData.BlockNum {
+		if blockData.BlockIndex == blockData.BlockTotal {
 			break
 		}
 	}
