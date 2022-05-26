@@ -67,6 +67,7 @@ type FileList struct {
 	Fileid types.Bytes8 `json:"fileid"`
 }
 type SchedulerInfo struct {
-	Ip    types.Bytes     `json:"ip"`
-	Owner types.AccountID `json:"acc"`
+	Ip             types.Bytes     `json:"ip"`
+	Owner          types.AccountID `json:"stash_user"`
+	ControllerUser types.AccountID `json:"controller_user"`
 }

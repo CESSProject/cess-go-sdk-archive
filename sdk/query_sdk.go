@@ -44,14 +44,23 @@ func (fs QuerySDK) QueryPurchasedSpace() (result.UserHoldSpaceDetails, error) {
 	if err != nil {
 		return userinfo, errors.Wrap(err, "[Error]Get user data fail")
 	}
-	if details.UsedSpace.Int64()/1024/1024 == 0 && details.UsedSpace.Int64() != 0 {
-		details.UsedSpace.SetInt64(1)
-	} else {
-		details.UsedSpace.SetInt64(details.UsedSpace.Int64() / 1024 / 1024)
+	PurchasedSpace, UsedSpace, RemainingSpace := int64(0), int64(0), int64(0)
+	if details.UsedSpace.Int != nil {
+		UsedSpace = details.UsedSpace.Int64()
 	}
-	userinfo.PurchasedSpace = strconv.FormatInt(details.PurchasedSpace.Int64()/1024/1024, 10)
-	userinfo.UsedSpace = strconv.FormatInt(details.UsedSpace.Int64(), 10)
-	userinfo.RemainingSpace = strconv.FormatInt(details.RemainingSpace.Int64()/1024/1024, 10)
+	if details.PurchasedSpace.Int != nil {
+		PurchasedSpace = details.PurchasedSpace.Int64()
+	}
+	if details.RemainingSpace.Int != nil {
+		RemainingSpace = details.RemainingSpace.Int64()
+	}
+	if UsedSpace/1024/1024 == 0 && UsedSpace != 0 {
+		UsedSpace = 0
+	}
+
+	userinfo.PurchasedSpace = strconv.FormatInt(PurchasedSpace/1024/1024, 10)
+	userinfo.UsedSpace = strconv.FormatInt(UsedSpace, 10)
+	userinfo.RemainingSpace = strconv.FormatInt(RemainingSpace/1024/1024, 10)
 	return userinfo, nil
 }
 

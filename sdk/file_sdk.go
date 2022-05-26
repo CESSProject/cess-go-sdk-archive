@@ -243,12 +243,12 @@ func (fs FileSDK) FileDownload(fileid, installpath string) error {
 	if err != nil {
 		return errors.Wrap(err, "[Error]Get file: info fail")
 	}
-	if string(fileinfo.FileState) != "active" {
-		err = errors.New("[Tips]The file " + fileid + " has not been backed up, please try again later")
+	if fileinfo.File_Name == nil {
+		err = errors.New("[Tips]The fileid " + fileid + " has been deleted,the file does not exist")
 		return err
 	}
-	if fileinfo.File_Name == nil {
-		err = errors.New("[Tips]The fileid " + fileid + " used to find the file is incorrect, please try again")
+	if string(fileinfo.FileState) != "active" {
+		err = errors.New("[Tips]The file " + fileid + " has not been backed up, please try again later")
 		return err
 	}
 
