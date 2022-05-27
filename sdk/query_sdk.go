@@ -56,6 +56,8 @@ func (fs QuerySDK) QueryPurchasedSpace() (result.UserHoldSpaceDetails, error) {
 	}
 	if UsedSpace/1024/1024 == 0 && UsedSpace != 0 {
 		UsedSpace = 0
+	} else {
+		UsedSpace = UsedSpace / 1024 / 1024
 	}
 
 	userinfo.PurchasedSpace = strconv.FormatInt(PurchasedSpace/1024/1024, 10)

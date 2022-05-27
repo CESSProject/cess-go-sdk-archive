@@ -75,6 +75,12 @@ func (fs FileSDK) FileUpload(block BlockSize, path, backups, privatekey string) 
 	if err != nil {
 		return "", errors.Wrap(err, "[Error]Create snowflake fail")
 	}
+	if backups == "0" {
+		return fileid, errors.New("The number of backups must be bigger than 1")
+	}
+	if len(privatekey) != 16 && len(privatekey) != 24 && len(privatekey) != 32 && len(privatekey) != 0 {
+		return fileid, errors.New("[Error]The password must be 16,24,32 bits long")
+	}
 	var blockinfo module.FileUploadInfo
 	blockinfo.Backups = backups
 	blockinfo.FileId = fileid
@@ -174,9 +180,6 @@ func (fs FileSDK) FileUpload(block BlockSize, path, backups, privatekey string) 
 	}
 
 	if len(privatekey) != 0 {
-		if len(privatekey) != 16 && len(privatekey) != 24 && len(privatekey) != 32 && len(privatekey) != 0 {
-			return fileid, errors.New("[Error]The password must be 16,24,32 bits long")
-		}
 		encodefile, err := tools.AesEncrypt(filebyte, []byte(privatekey))
 		if err != nil {
 			return fileid, errors.Wrap(err, "[Error]Encode the file fail ,error")
@@ -325,7 +328,12 @@ func (fs FileSDK) FileDownload(fileid, installpath string) error {
 		var respbody rpc.RespBody
 		err = proto.Unmarshal(resp.Body, &respbody)
 		if err != nil || respbody.Code != 200 {
-			return errors.Wrap(err, "[Error]Download file from CESS reply message"+respbody.Msg+",error")
+			if err != nil {
+				return errors.Wrap(err, "[Error]Download file from CESS reply message"+respbody.Msg+",error")
+			}
+			if err == nil {
+				return errors.New("[Error]Download file from CESS reply message" + respbody.Msg)
+			}
 		}
 		var blockData module.FileDownloadInfo
 		err = proto.Unmarshal(respbody.Data, &blockData)
@@ -382,9 +390,6 @@ func (fs FileSDK) FileDecrypt(decryptpath, savepath, password string) error {
 		return err
 	}
 
-	//fmt.Println("Please enter the file's password:")
-	//fmt.Print(">")
-	//psw, _ := gopass.GetPasswdMasked()
 	encodefile, err := ioutil.ReadFile(decryptpath)
 	if err != nil {
 		return errors.Wrap(err, "[Error]Failed to read file, please check file integrity")
@@ -427,13 +432,10 @@ func (fs FileSDK) FileEncrypt(encryptpath, savepath, password string) error {
 		_ = errors.Wrap(err, "[Error]There is no such file, please confirm the correct location of the file,and enter the absolute path of the file")
 		return err
 	}
-	f, err := os.Open(encryptpath)
+	filebyte, err := ioutil.ReadFile(encryptpath)
 	if err != nil {
 		return errors.Wrap(err, "[Error]This file was broken")
 	}
-	defer f.Close()
-	filebyte, err := ioutil.ReadAll(f)
-
 	encryptfile, err := tools.AesEncrypt(filebyte, []byte(password))
 	if err != nil {
 		return errors.Wrap(err, "[Error]encrypt the file fail ,error")
