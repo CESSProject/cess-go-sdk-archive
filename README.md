@@ -37,7 +37,7 @@ Method receiver:
 
 ### File upload
 
-* Example link:https://github.com/CESSProject/cess-go-sdk/blob/5f5b41204890cbb0da2134c421ace8d546d535c1/sdk/file_sdk.go#L48
+* Example link:https://github.com/CESSProject/cess-go-sdk/blob/d5d1c99f54f09166a1c5bf6c6ebab1724747556c/test/file_upload_test.go#L8
 
 * Method explanation: Uploading files to the CESS system needs to consume the purchased storage space
 
@@ -69,7 +69,7 @@ Method receiver:
 
 ### File download
 
-* Example link:https://github.com/CESSProject/cess-go-sdk/blob/5f5b41204890cbb0da2134c421ace8d546d535c1/sdk/file_sdk.go#L236
+* Example link:https://github.com/CESSProject/cess-go-sdk/blob/d5d1c99f54f09166a1c5bf6c6ebab1724747556c/test/file_download_test.go#L8
 
 * Method Explanation:Restore and download uploaded files from CESS system to local
 
@@ -97,7 +97,7 @@ Method receiver:
 
 ### FileDelete
 
-* Example link:https://github.com/CESSProject/cess-go-sdk/blob/5f5b41204890cbb0da2134c421ace8d546d535c1/sdk/file_sdk.go#L363
+* Example link:https://github.com/CESSProject/cess-go-sdk/blob/d5d1c99f54f09166a1c5bf6c6ebab1724747556c/test/file_delete_test.go#L8
 
 * Method Explanation:Delete the uploaded files on the CESS system
 
@@ -124,7 +124,7 @@ Method receiver:
 
 ### File decrypt
 
-* Example link:https://github.com/CESSProject/cess-go-sdk/blob/5f5b41204890cbb0da2134c421ace8d546d535c1/sdk/file_sdk.go#L383
+* Example link:https://github.com/CESSProject/cess-go-sdk/blob/d5d1c99f54f09166a1c5bf6c6ebab1724747556c/test/file_decrypt_test.go#L8
 
 * Method Explanation: Decrypt the file, the decryption method is AES
 
@@ -146,7 +146,7 @@ Method receiver:
 
 ### File encrypt 
 
-* Example link:https://github.com/CESSProject/cess-go-sdk/blob/5f5b41204890cbb0da2134c421ace8d546d535c1/sdk/file_sdk.go#L426
+* Example link:https://github.com/CESSProject/cess-go-sdk/blob/d5d1c99f54f09166a1c5bf6c6ebab1724747556c/test/file_encrypt_test.go#L8
 
 * Method Explanation:Encrypt the file, the encryption method is AES
 
@@ -168,7 +168,7 @@ Method receiver:
 
 ### Query file
 
-* Example link:https://github.com/CESSProject/cess-go-sdk/blob/5f5b41204890cbb0da2134c421ace8d546d535c1/sdk/query_sdk.go#L95
+* Example link:https://github.com/CESSProject/cess-go-sdk/blob/d5d1c99f54f09166a1c5bf6c6ebab1724747556c/test/query_file_test.go#L8
 
 * Method Explanation:Query the information of the uploaded file based on the unique id of the file
 
@@ -200,7 +200,7 @@ Method receiver:
 
 ### Query file list
 
-* Example link:https://github.com/CESSProject/cess-go-sdk/blob/5f5b41204890cbb0da2134c421ace8d546d535c1/sdk/query_sdk.go#L122
+* Example link:https://github.com/CESSProject/cess-go-sdk/blob/d5d1c99f54f09166a1c5bf6c6ebab1724747556c/test/query_file_test.go#L20
 
 * Method Explanation:Query all files uploaded by the user based on user information
 
@@ -221,7 +221,7 @@ Method receiver:
 
 ### Query price
 
-* Example link:https://github.com/CESSProject/cess-go-sdk/blob/5f5b41204890cbb0da2134c421ace8d546d535c1/sdk/query_sdk.go#L72
+* Example link:https://github.com/CESSProject/cess-go-sdk/blob/d5d1c99f54f09166a1c5bf6c6ebab1724747556c/test/query_price_test.go#L8
 
 * Method Explanation:Query the real-time price of the current space of the CESS system, in CESS/G
 
@@ -242,7 +242,7 @@ Method receiver:
 
 ### Query purchased space
 
-* Example link:https://github.com/CESSProject/cess-go-sdk/blob/5f5b41204890cbb0da2134c421ace8d546d535c1/sdk/query_sdk.go#L27
+* Example link:https://github.com/CESSProject/cess-go-sdk/blob/d5d1c99f54f09166a1c5bf6c6ebab1724747556c/test/query_purchased_space_test.go#L8
 
 * Method Explanation:Query the CESS storage space purchased by the user through user information
 
@@ -295,7 +295,7 @@ Method receiver:
 
 ### ObtainFromFaucet
 
-* Example link:https://github.com/CESSProject/cess-go-sdk/blob/5f5b41204890cbb0da2134c421ace8d546d535c1/sdk/purchase_sdk.go#L33
+* Example link:https://github.com/CESSProject/cess-go-sdk/blob/d5d1c99f54f09166a1c5bf6c6ebab1724747556c/test/purchase_obtain_from_faucet_test.go#L8
 
 * Method Explanation:Get CESS transaction coins from the faucet
 
