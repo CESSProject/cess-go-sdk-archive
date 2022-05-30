@@ -378,7 +378,7 @@ func (fs FileSDK) FileDelete(fileid string) error {
 }
 
 /*
-When you download the file if it is not decode, you can decode it this way
+When you download the file if it is not decrypt, you can decrypt it this way
 */
 func (fs FileSDK) FileDecrypt(decryptpath, savepath, password string) error {
 	if len(password) != 16 && len(password) != 24 && len(password) != 32 {
@@ -395,24 +395,24 @@ func (fs FileSDK) FileDecrypt(decryptpath, savepath, password string) error {
 		return errors.Wrap(err, "[Error]Failed to read file, please check file integrity")
 	}
 
-	decodefile, err := tools.AesDecrypt(encodefile, []byte(password))
+	decryptfile, err := tools.AesDecrypt(encodefile, []byte(password))
 	if err != nil {
-		return errors.Wrap(err, "[Error]File decode failed, please check your password! error")
+		return errors.Wrap(err, "[Error]File decrypt failed, please check your password! error")
 	}
 	filename := filepath.Base(decryptpath)
-	//The decoded file is saved to the download folder, if the name is the same, the original file will be deleted
+	//The decrypted file is saved to the download folder, if the name is the same, the original file will be deleted
 	if decryptpath == filepath.Join(savepath, filename) {
 		err = os.Remove(decryptpath)
 		if err != nil {
-			return errors.Wrap(err, "[Error]An error occurred while saving the decoded file! error")
+			return errors.Wrap(err, "[Error]An error occurred while saving the decrypted file! error")
 		}
 	}
 	fileinfo, err := os.Create(filepath.Join(savepath, filename))
 	if err != nil {
-		return errors.Wrap(err, "[Error]An error occurred while saving the decoded file! error")
+		return errors.Wrap(err, "[Error]An error occurred while saving the decrypted file! error")
 	}
 	defer fileinfo.Close()
-	_, err = fileinfo.Write(decodefile)
+	_, err = fileinfo.Write(decryptfile)
 	if err != nil {
 		return errors.Wrap(err, "[Error]Failed to save decrypted content to file! error")
 	}
@@ -441,16 +441,16 @@ func (fs FileSDK) FileEncrypt(encryptpath, savepath, password string) error {
 		return errors.Wrap(err, "[Error]encrypt the file fail ,error")
 	}
 	filename := filepath.Base(encryptpath)
-	//The decoded file is saved to the download folder, if the name is the same, the original file will be deleted
+	//The decrypted file is saved to the download folder, if the name is the same, the original file will be deleted
 	if encryptpath == filepath.Join(savepath, filename) {
 		err = os.Remove(encryptpath)
 		if err != nil {
-			return errors.Wrap(err, "[Error]An error occurred while saving the decoded file! error")
+			return errors.Wrap(err, "[Error]An error occurred while saving the decrypted file! error")
 		}
 	}
 	fileinfo, err := os.Create(filepath.Join(savepath, filename))
 	if err != nil {
-		return errors.Wrap(err, "[Error]An error occurred while saving the decoded file! error")
+		return errors.Wrap(err, "[Error]An error occurred while saving the decrypted file! error")
 	}
 	defer fileinfo.Close()
 	_, err = fileinfo.Write(encryptfile)
