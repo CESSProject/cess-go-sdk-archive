@@ -266,7 +266,7 @@ Method receiver:
 
 ### Expansion
 
-* Example link:https://github.com/CESSProject/cess-go-sdk/blob/5f5b41204890cbb0da2134c421ace8d546d535c1/sdk/purchase_sdk.go#L72
+* Example link:https://github.com/CESSProject/cess-go-sdk/blob/d5d1c99f54f09166a1c5bf6c6ebab1724747556c/test/purchase_expansion_test.go#L8
 
   * Method Explanation:Purchase storage space for a CESS system
 
