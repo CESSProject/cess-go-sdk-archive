@@ -441,16 +441,16 @@ func (fs FileSDK) FileEncrypt(encryptpath, savepath, password string) error {
 		return errors.Wrap(err, "[Error]encrypt the file fail ,error")
 	}
 	filename := filepath.Base(encryptpath)
-	//The decrypted file is saved to the download folder, if the name is the same, the original file will be deleted
+	//The encrypted file is saved to the download folder, if the name is the same, the original file will be deleted
 	if encryptpath == filepath.Join(savepath, filename) {
 		err = os.Remove(encryptpath)
 		if err != nil {
-			return errors.Wrap(err, "[Error]An error occurred while saving the decrypted file! error")
+			return errors.Wrap(err, "[Error]An error occurred while saving the encrypted file! error")
 		}
 	}
 	fileinfo, err := os.Create(filepath.Join(savepath, filename))
 	if err != nil {
-		return errors.Wrap(err, "[Error]An error occurred while saving the decrypted file! error")
+		return errors.Wrap(err, "[Error]An error occurred while saving the encrypted file! error")
 	}
 	defer fileinfo.Close()
 	_, err = fileinfo.Write(encryptfile)
