@@ -5,7 +5,6 @@ import (
 	"cess-go-sdk/internal/chain"
 	"cess-go-sdk/tools"
 	"encoding/json"
-	"fmt"
 	"github.com/pkg/errors"
 )
 
@@ -33,7 +32,7 @@ walletaddress:wallet address
 func (ts PurchaseSDK) ObtainFromFaucet(walletaddress string) error {
 	pubkey, err := tools.DecodeToPub(walletaddress, tools.ChainCessTestPrefix)
 	if err != nil {
-		fmt.Printf("[Error]The wallet address you entered is incorrect, please re-enter:%v\n", err.Error())
+		errors.Wrap(err, "[Error]The wallet address you entered is incorrect, please re-enter")
 		return err
 	}
 	var ob = struct {
@@ -54,7 +53,6 @@ func (ts PurchaseSDK) ObtainFromFaucet(walletaddress string) error {
 		err = errors.New(res.Ans.Err)
 		return errors.Wrap(err, "[Error]Obtain from faucet fail")
 	}
-	fmt.Println(res)
 
 	if res.Ans.AsInBlock {
 		return nil

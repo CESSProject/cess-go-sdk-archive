@@ -37,7 +37,7 @@ func (fs QuerySDK) QueryPurchasedSpace() (result.UserHoldSpaceDetails, error) {
 	ci.ChainModuleMethod = chain.PurchasedSpaceModuleMethod
 	pubkey, err := tools.DecodeToPub(fs.ChainData.WalletAddress, tools.ChainCessTestPrefix)
 	if err != nil {
-		fmt.Printf("[Error]The wallet address you entered is incorrect, please re-enter:%v\n", err.Error())
+		errors.Wrap(err, "[Error]The wallet address you entered is incorrect, please re-enter")
 		return userinfo, err
 	}
 	details, err := ci.UserHoldSpaceDetails(tools.PubBytesTo0XString(pubkey))
@@ -129,7 +129,7 @@ func (fs QuerySDK) QueryFileList() ([]result.FindFileList, error) {
 	ci.ChainModuleMethod = chain.FindFileModuleMethod[1]
 	pubkey, err := tools.DecodeToPub(fs.ChainData.WalletAddress, tools.ChainCessTestPrefix)
 	if err != nil {
-		fmt.Printf("[Error]The wallet address you entered is incorrect, please re-enter:%v\n", err.Error())
+		errors.Wrap(err, "[Error]The wallet address you entered is incorrect, please re-enter")
 		return filelist, err
 	}
 

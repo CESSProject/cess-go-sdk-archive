@@ -133,7 +133,6 @@ func (fs FileSDK) FileUpload(block BlockSize, path, backups, privatekey string) 
 		defer cancel()
 		if err != nil {
 			err = errors.New("Connect with scheduler timeout")
-			fmt.Printf("%s[Tips]%sdialog with scheduler:%s fail! reason:%s\n", tools.Yellow, tools.Reset, string(base58.Decode(string(schd.Ip))), err)
 			if i == len(schds)-1 {
 				return fileid, errors.Wrap(err, "[Error]All scheduler is offline")
 			}
@@ -225,7 +224,6 @@ func (fs FileSDK) FileUpload(block BlockSize, path, backups, privatekey string) 
 			}
 		}
 	}
-	fmt.Printf("%s[Success]%s:upload file:%s successful!", tools.Green, tools.Reset, path)
 	return fileid, nil
 }
 
@@ -288,7 +286,6 @@ func (fs FileSDK) FileDownload(fileid, installpath string) error {
 		defer cancel()
 		if err != nil {
 			err = errors.New("Connect with scheduler timeout")
-			fmt.Printf("%s[Tips]%sdialog with scheduler:%s fail! reason:%s\n", tools.Yellow, tools.Reset, string(base58.Decode(string(schd.Ip))), err)
 			if i == len(schds)-1 {
 				return errors.Wrap(err, "[Error]All scheduler is offline")
 			}

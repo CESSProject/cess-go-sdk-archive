@@ -345,7 +345,7 @@ func (ci *CessInfo) DeleteFileOnChain(fileid string) error {
 				}
 				err = types.EventRecordsRaw(*h).DecodeEventRecords(meta, &events)
 				if err != nil {
-					fmt.Println("+++ DecodeEvent err: ", err)
+					errors.Wrap(err, "DecodeEvent err")
 					return err
 				}
 				if events.FileBank_DeleteFile != nil {
