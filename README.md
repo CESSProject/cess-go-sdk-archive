@@ -29,7 +29,7 @@ Method receiver:
 
 | method receiver |                        Include method                        |                             Link                             |
 | :-------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
-|     FileSDK     | FileUpload、FileDownload、FileDelete、FileDncrypt、FileEncrypt | https://github.com/CESSProject/cess-go-sdk/blob/5f5b41204890cbb0da2134c421ace8d546d535c1/sdk/file_sdk.go#L23 |
+|     FileSDK     | FileUpload、FileDownload、FileDelete、FileDecrypt、FileEncrypt | https://github.com/CESSProject/cess-go-sdk/blob/5f5b41204890cbb0da2134c421ace8d546d535c1/sdk/file_sdk.go#L23 |
 |    QuerySDK     |  QueryPurchasedSpace、QueryPrice、QueryFile、QueryFileList   | https://github.com/CESSProject/cess-go-sdk/blob/5f5b41204890cbb0da2134c421ace8d546d535c1/sdk/query_sdk.go#L13 |
 |   PurchaseSDK   |                 ObtainFromFaucet、Expansion                  | https://github.com/CESSProject/cess-go-sdk/blob/5f5b41204890cbb0da2134c421ace8d546d535c1/sdk/purchase_sdk.go#L12 |
 
