@@ -1,6 +1,10 @@
 package chain
 
-import "github.com/centrifuge/go-substrate-rpc-client/v4/types"
+import (
+	"time"
+
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+)
 
 var (
 	//trade
@@ -18,8 +22,14 @@ var (
 	FindFileChainModule  = "FileBank"
 	FindFileModuleMethod = []string{"File", "UserHoldFileList"}
 
-	FindSchedulerInfoModule = "FileMap"
-	FindSchedulerInfoMethod = "SchedulerMap"
+	FindSchedulerInfoModule            = "FileMap"
+	FindSchedulerInfoMethod            = "SchedulerMap"
+	ChainTx_FileBank_UploadDeclaration = "FileBank.upload_declaration"
+)
+
+const (
+	// the time to wait for the event, in seconds
+	TimeToWaitEvents = time.Duration(time.Second * 20)
 )
 
 type CessInfo struct {
