@@ -7,17 +7,20 @@ import (
 	"cess-go-sdk/module"
 	"cess-go-sdk/tools"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
-	"github.com/btcsuite/btcutil/base58"
-	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 	"io/ioutil"
+	"math"
 	"math/big"
 	"os"
 	"path/filepath"
-	"strconv"
 	"sync"
 	"time"
+
+	"github.com/btcsuite/btcutil/base58"
+	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 )
 
 type FileSDK struct {
@@ -60,21 +63,52 @@ func (fs FileSDK) FileUpload(block BlockSize, path, backups, privatekey string) 
 		return "", errors.Wrap(err, "[Error]Please do not upload the folder")
 	}
 
-	spares, err := strconv.Atoi(backups)
-	if err != nil {
-		return "", errors.Wrap(err, "[Error]Please enter a correct integer")
+	// spares, err := strconv.Atoi(backups)
+	// if err != nil {
+	// 	return "", errors.Wrap(err, "[Error]Please enter a correct integer")
 
+	// }
+
+	// Determine file size
+	var fileid, filehash string
+	if file.Size() <= GB_1 {
+		filehash, err = tools.CalcFileHash(path)
+		if err != nil {
+			return "", errors.Wrap(err, "[Error]There is a problem with the file, please replace it")
+		}
+		fileid = "cess" + filehash
+	} else {
+		const chunkSize = MB_1 * BlockSize(1)
+
+		num := math.Ceil(float64(file.Size() / chunkSize))
+
+		fi, err := os.OpenFile(path, os.O_RDONLY, os.ModePerm)
+		if err != nil {
+			return "", errors.Wrap(err, "[Error]Please enter the correct file path,it can't open")
+		}
+		b := make([]byte, chunkSize)
+		var i int64 = 1
+		filehash := ""
+		for ; i <= int64(num); i++ {
+			fi.Seek((i-1)*chunkSize, 0)
+			if len(b) > int(file.Size()-(i-1)*chunkSize) {
+				b = make([]byte, file.Size()-(i-1)*chunkSize)
+			}
+			fi.Read(b)
+			h := sha256.New()
+			h.Write(b)
+			filehash += hex.EncodeToString(h.Sum(nil))
+		}
+		h := sha256.New()
+		h.Write([]byte(filehash))
+		fileid = "cess" + hex.EncodeToString(h.Sum(nil))
+		fi.Close()
 	}
 
-	filehash, err := tools.CalcFileHash(path)
-	if err != nil {
-		return "", errors.Wrap(err, "[Error]There is a problem with the file, please replace it")
-	}
-
-	fileid, err := tools.GetGuid(1)
-	if err != nil {
-		return "", errors.Wrap(err, "[Error]Create snowflake fail")
-	}
+	// fileid, err := tools.GetGuid(1)
+	// if err != nil {
+	// 	return "", errors.Wrap(err, "[Error]Create snowflake fail")
+	// }
 	if backups == "0" {
 		return fileid, errors.New("The number of backups must be bigger than 1")
 	}
@@ -119,11 +153,17 @@ func (fs FileSDK) FileUpload(block BlockSize, path, backups, privatekey string) 
 	//	filesize.SetInt64(file.Size() / 1024)
 	//}
 	fee.SetInt64(int64(0))
-
-	_, err = ci.UploadFileMetaInformation(fileid, file.Name(), filehash, privatekey == "", uint8(spares), uint64(file.Size()), fee, fs.ChainData.WalletAddress)
+	txHash, err := ci.UploadDeclaration(ci.IdentifyAccountPhrase, fileid, file.Name())
 	if err != nil {
-		return "", errors.Wrap(err, "[Error]Upload file meta information error")
+		return "", errors.Wrap(err, "[Error]Upload Declaration error")
 	}
+	if txHash == "" {
+		return "", errors.Wrap(err, "[Error]Server internal data error")
+	}
+	// _, err = ci.UploadFileMetaInformation(fileid, file.Name(), filehash, privatekey == "", uint8(spares), uint64(file.Size()), fee, fs.ChainData.WalletAddress)
+	// if err != nil {
+	// 	return "", errors.Wrap(err, "[Error]Upload file meta information error")
+	// }
 
 	var client *rpc.Client
 	for i, schd := range schds {
@@ -177,51 +217,63 @@ func (fs FileSDK) FileUpload(block BlockSize, path, backups, privatekey string) 
 		sp.Put(reqmsg)
 		return nil
 	}
-
-	if len(privatekey) != 0 {
-		encodefile, err := tools.AesEncrypt(filebyte, []byte(privatekey))
-		if err != nil {
-			return fileid, errors.Wrap(err, "[Error]Encode the file fail ,error")
-		}
-		blocks := len(encodefile) / blocksize
-		if len(encodefile)%blocksize == 0 {
-			blocktotal = blocks
-		} else {
-			blocktotal = blocks + 1
-		}
-		blockinfo.BlockTotal = int32(blocktotal)
-		for i := 0; i < blocktotal; i++ {
-			block := make([]byte, 0)
-			if blocks != i {
-				block = encodefile[i*blocksize : (i+1)*blocksize]
-			} else {
-				block = encodefile[i*blocksize:]
-			}
-			err = commit(i, block)
+	for {
+	LOOP:
+		var err error
+		if len(privatekey) != 0 {
+			encodefile, err := tools.AesEncrypt(filebyte, []byte(privatekey))
 			if err != nil {
-				return fileid, errors.Wrap(err, "[Error]:Failed to upload the file error")
+				fmt.Printf("[Error]Encode the file fail ,error:%v", err)
+				time.Sleep(5 * time.Second)
+				continue
 			}
-		}
-	} else {
-		fmt.Printf("%s[Tips]%s:upload file:%s without private key", tools.Yellow, tools.Reset, path)
-		blocks := len(filebyte) / blocksize
-		if len(filebyte)%blocksize == 0 {
-			blocktotal = blocks
-		} else {
-			blocktotal = blocks + 1
-		}
-		blockinfo.BlockTotal = int32(blocktotal)
-		for i := 0; i < blocktotal; i++ {
-			block := make([]byte, 0)
-			if blocks != i {
-				block = filebyte[i*blocksize : (i+1)*blocksize]
+			blocks := len(encodefile) / blocksize
+			if len(encodefile)%blocksize == 0 {
+				blocktotal = blocks
 			} else {
-				block = filebyte[i*blocksize:]
+				blocktotal = blocks + 1
 			}
-			err = commit(i, block)
-			if err != nil {
-				return fileid, errors.Wrap(err, "[Error]:Failed to upload the file error")
+			blockinfo.BlockTotal = int32(blocktotal)
+			for i := 0; i < blocktotal; i++ {
+				block := make([]byte, 0)
+				if blocks != i {
+					block = encodefile[i*blocksize : (i+1)*blocksize]
+				} else {
+					block = encodefile[i*blocksize:]
+				}
+				err = commit(i, block)
+				if err != nil {
+					fmt.Printf("[Error]:Failed to upload the file error:%v", err)
+					time.Sleep(10 * time.Second)
+					goto LOOP
+				}
 			}
+		} else {
+			fmt.Printf("%s[Tips]%s:upload file:%s without private key", tools.Yellow, tools.Reset, path)
+			blocks := len(filebyte) / blocksize
+			if len(filebyte)%blocksize == 0 {
+				blocktotal = blocks
+			} else {
+				blocktotal = blocks + 1
+			}
+			blockinfo.BlockTotal = int32(blocktotal)
+			for i := 0; i < blocktotal; i++ {
+				block := make([]byte, 0)
+				if blocks != i {
+					block = filebyte[i*blocksize : (i+1)*blocksize]
+				} else {
+					block = filebyte[i*blocksize:]
+				}
+				err = commit(i, block)
+				if err != nil {
+					fmt.Printf("[Error]:Failed to upload the file error:%v", err)
+					time.Sleep(10 * time.Second)
+					goto LOOP
+				}
+			}
+		}
+		if err == nil {
+			break
 		}
 	}
 	return fileid, nil
