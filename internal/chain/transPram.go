@@ -70,3 +70,8 @@ type SchedulerInfo struct {
 	Owner          types.AccountID `json:"stash_user"`
 	ControllerUser types.AccountID `json:"controller_user"`
 }
+
+type UserFileList struct {
+	File_hash types.Bytes
+	File_size types.U64
+}

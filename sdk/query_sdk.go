@@ -113,7 +113,9 @@ func (fs QuerySDK) QueryFile(fileid string) (result.FileInfo, error) {
 			fileinfo.FileName = string(data.Names[i])
 		}
 	}
-
+	if fileinfo.FileName == "" {
+		fileinfo.FileName = string(data.Names[0])
+	}
 	fileinfo.FileSize = int64(data.FileSize)
 	fileinfo.FileState = string(data.FileState)
 
@@ -134,13 +136,14 @@ func (fs QuerySDK) QueryFileList() ([]result.FindFileList, error) {
 		return filelist, err
 	}
 
-	data, err := ci.GetFileList(tools.PubBytesTo0XString(pubkey))
+	data, err := ci.GetFileList(pubkey)
 	if err != nil {
 		return nil, errors.Wrap(err, "[Error]Get file list fail")
 	}
+
 	for _, v := range data {
 		var fileresult result.FindFileList
-		fileresult.FileId = string(v)
+		fileresult.FileId = string(v.File_hash)
 		filelist = append(filelist, fileresult)
 	}
 	return filelist, nil

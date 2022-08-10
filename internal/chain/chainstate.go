@@ -120,29 +120,25 @@ func (ci *CessInfo) GetFileInfo(fileid string) (FileMetaInfo, error) {
 }
 
 //GetFileList means to get a list of all files of the current user
-func (ci *CessInfo) GetFileList(AccountPublicKey string) ([][]byte, error) {
+func (ci *CessInfo) GetFileList(AccountPublicKey []byte) ([]UserFileList, error) {
 	var (
 		err  error
-		data = make([][]byte, 0)
+		data []UserFileList
 	)
 	api.getSubstrateApiSafe()
 	defer func() {
 		api.releaseSubstrateApi()
 		err := recover()
 		if err != nil {
-			fmt.Printf("[Error]Recover UserHoldSpaceDetails panic fail :%s\n", err)
+			fmt.Printf("[Error]Recover GetFileList panic fail :%s\n", err)
 		}
 	}()
 	meta, err := api.r.RPC.State.GetMetadataLatest()
 	if err != nil {
 		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", ci.ChainModule, ci.ChainModuleMethod)
 	}
-	publickey, err := types.NewMultiAddressFromHexAccountID(AccountPublicKey)
-	if err != nil {
-		return data, err
-	}
 
-	key, err := types.CreateStorageKey(meta, ci.ChainModule, ci.ChainModuleMethod, publickey.AsID[:])
+	key, err := types.CreateStorageKey(meta, ci.ChainModule, ci.ChainModuleMethod, AccountPublicKey)
 	if err != nil {
 		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", ci.ChainModule, ci.ChainModuleMethod)
 	}
