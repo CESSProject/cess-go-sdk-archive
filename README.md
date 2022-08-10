@@ -57,7 +57,6 @@ Method receiver:
   | :------------: | :----------------------------------------------------------: | :-----------: |
   |   blocksize    |                      CESS chain address                      | sdk.BlockSize |
   |      path      |                       wallet mnemonic                        |    string     |
-  |    backups     |                        wallet address                        |    string     |
   |   privatekey   | File encryption password, if the length is zero, it is a public file |    string     |
 
 * Return parameter:
@@ -192,11 +191,7 @@ Method receiver:
   | :------------: | :--------------------: | :----: |
   |    FileName    |       file name        | string |
   |    FileSize    |   file size, unit b    | int64  |
-  |    FileHash    |       file hash        | string |
-  |     Public     |  if a public document  |  bool  |
-  |    Backups     | number of file backups |  int8  |
-  |  Downloadfee   |     download costs     | int64  |
-  |      err       |      return error      | error  |
+  |    FileState   |      state             | string |
 
 ### Query file list
 
@@ -211,13 +206,14 @@ Method receiver:
   | parameter name | Parameter explanation |  type  |
   | :------------: | :-------------------: | :----: |
   |  CessRpcAddr   |  CESS chain address   | string |
+  | WalletAddress  |    wallet address     | string |
   
 * Return parameter:
 
-  | parameter name | Parameter explanation |  type  |
-  | :------------: | :-------------------: | :----: |
-  |     FileId     |        file id        | string |
-  |      err       |     return error      | error  |
+  | parameter name | Parameter explanation |   type   |
+  | :------------: | :-------------------: | :------: |
+  |     FileId     |        file id        | []string |
+  |      err       |     return error      |   error  |
 
 ### Query price
 
