@@ -84,10 +84,10 @@ func (ci *CessInfo) GetPrice() (types.U128, error) {
 }
 
 //GetFileInfo means to get the specific information of the file through the current fileid
-func (ci *CessInfo) GetFileInfo(fileid string) (FileInfo, error) {
+func (ci *CessInfo) GetFileInfo(fileid string) (FileMetaInfo, error) {
 	var (
 		err  error
-		data FileInfo
+		data FileMetaInfo
 	)
 
 	api.getSubstrateApiSafe()
@@ -111,7 +111,7 @@ func (ci *CessInfo) GetFileInfo(fileid string) (FileInfo, error) {
 
 	_, err = api.r.RPC.State.GetStorageLatest(key, &data)
 	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", ci.ChainModule, ci.ChainModuleMethod)
+		return data, errors.New("Empty")
 	}
 	return data, nil
 }

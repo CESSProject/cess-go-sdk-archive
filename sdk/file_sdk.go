@@ -3,14 +3,15 @@ package sdk
 import (
 	"cess-go-sdk/config"
 	"cess-go-sdk/internal/chain"
+	"cess-go-sdk/internal/fileHandling"
 	"cess-go-sdk/internal/rpc"
 	"cess-go-sdk/module"
 	"cess-go-sdk/tools"
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	cesskeyring "github.com/CESSProject/go-keyring"
@@ -213,116 +214,38 @@ func (fs FileSDK) FileDownload(fileid, installpath string) error {
 	ci.RpcAddr = fs.ChainData.CessRpcAddr
 	ci.ChainModule = chain.FindFileChainModule
 	ci.ChainModuleMethod = chain.FindFileModuleMethod[0]
-	fileinfo, err := ci.GetFileInfo(fileid)
+
+	// file meta info
+	fmeta, err := ci.GetFileInfo(fileid)
 	if err != nil {
-		return errors.Wrap(err, "[Error]Get file: info fail")
-	}
-	if fileinfo.File_Name == nil {
-		err = errors.New("[Tips]The fileid " + fileid + " has been deleted,the file does not exist")
 		return err
 	}
-	if string(fileinfo.FileState) != "active" {
-		err = errors.New("[Tips]The file " + fileid + " has not been backed up, please try again later")
-		return err
+
+	if string(fmeta.FileState) != "active" {
+		return errors.New("[Tips]The file " + fileid + " has not been backed up, please try again later")
 	}
 
 	_, err = os.Stat(installpath)
 	if err != nil {
-		err = os.Mkdir(installpath, os.ModePerm)
+		err = os.MkdirAll(installpath, os.ModePerm)
 		if err != nil {
 			return errors.Wrap(err, "[Error]Create install path error")
 		}
 	}
-	_, err = os.Create(filepath.Join(installpath, string(fileinfo.File_Name[:])))
+
+	for i := 0; i < len(fmeta.ChunkInfo); i++ {
+		// Download the file from the scheduler service
+		fname := filepath.Join(installpath, string(fmeta.ChunkInfo[i].ChunkId))
+		downloadFromStorage(fname, string(fmeta.ChunkInfo[i].MinerIp))
+	}
+
+	r := len(fmeta.ChunkInfo) / 3
+	d := len(fmeta.ChunkInfo) - r
+	err = fileHandling.ReedSolomon_Restore(installpath, fileid, d, r)
 	if err != nil {
-		return errors.Wrap(err, "[Error]Create installed file error ")
+		return errors.New("[Tips]The file " + fileid + " download failed, please try again later")
 	}
-	installfile, err := os.OpenFile(filepath.Join(installpath, string(fileinfo.File_Name[:])), os.O_WRONLY|os.O_APPEND, 0666)
-	if err != nil {
-		return errors.Wrap(err, "[Error]:Failed to save key error")
-	}
-	defer installfile.Close()
-
-	ci.RpcAddr = fs.ChainData.CessRpcAddr
-	ci.ChainModule = chain.FindSchedulerInfoModule
-	ci.ChainModuleMethod = chain.FindSchedulerInfoMethod
-	schds, err := ci.GetSchedulerInfo()
-	if err != nil {
-		return errors.Wrap(err, "[Error]Get scheduler list error")
-	}
-
-	var client *rpc.Client
-	for i, schd := range schds {
-		wsURL := "ws://" + string(base58.Decode(string(schd.Ip)))
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-		client, err = rpc.DialWebsocket(ctx, wsURL, "")
-		defer cancel()
-		if err != nil {
-			err = errors.New("Connect with scheduler timeout")
-			if i == len(schds)-1 {
-				return errors.Wrap(err, "[Error]All scheduler is offline")
-			}
-			continue
-		} else {
-			break
-		}
-	}
-
-	var wantfile module.FileDownloadReq
-	sp := sync.Pool{
-		New: func() interface{} {
-			return &rpc.ReqMsg{}
-		},
-	}
-	wantfile.FileId = fileid
-	wantfile.WalletAddress = fs.ChainData.WalletAddress
-	wantfile.BlockIndex = 1
-
-	for {
-		data, err := proto.Marshal(&wantfile)
-		if err != nil {
-			return errors.Wrap(err, "[Error]Marshal req file error")
-		}
-		req := sp.Get().(*rpc.ReqMsg)
-		req.Method = module.DownloadService
-		req.Service = module.CtlServiceName
-		req.Body = data
-
-		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
-		resp, err := client.Call(ctx, req)
-		cancel()
-		if err != nil {
-			return errors.Wrap(err, "[Error]Download file fail error")
-		}
-
-		var respbody rpc.RespBody
-		err = proto.Unmarshal(resp.Body, &respbody)
-		if err != nil || respbody.Code != 200 {
-			if err != nil {
-				return errors.Wrap(err, "[Error]Download file from CESS reply message"+respbody.Msg+",error")
-			}
-			if err == nil {
-				return errors.New("[Error]Download file from CESS reply message" + respbody.Msg)
-			}
-		}
-		var blockData module.FileDownloadInfo
-		err = proto.Unmarshal(respbody.Data, &blockData)
-		if err != nil {
-			return errors.Wrap(err, "[Error]Download file from CESS error")
-		}
-
-		_, err = installfile.Write(blockData.Data)
-		if err != nil {
-			return errors.Wrap(err, "[Error]:Failed to write file's block to file error")
-		}
-
-		wantfile.BlockIndex++
-		sp.Put(req)
-		if blockData.BlockIndex == blockData.BlockTotal {
-			break
-		}
-	}
-
+	os.Rename(filepath.Join(installpath, fileid), filepath.Join(installpath, string(fmeta.Names[0])))
 	return nil
 }
 
@@ -449,4 +372,67 @@ func WriteData(cli *rpc.Client, service, method string, body []byte) ([]byte, in
 		return nil, 0, errors.Wrap(err, "Unmarshal:")
 	}
 	return b.Data, b.Code, err
+}
+
+// Download files from cess storage service
+func downloadFromStorage(fpath string, mip string) error {
+	file, err := os.OpenFile(fpath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC|os.O_APPEND, 0666)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	var client *rpc.Client
+
+	wsURL := "ws://" + string(base58.Decode(mip))
+
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	client, err = rpc.DialWebsocket(ctx, wsURL, "")
+	if err != nil {
+		return err
+	}
+
+	var wantfile rpc.FileDownloadReq
+	fname := filepath.Base(fpath)
+
+	wantfile.FileId = fmt.Sprintf("%v", fname)
+	wantfile.BlockIndex = 1
+
+	reqmsg := rpc.ReqMsg{}
+	reqmsg.Method = module.MinerServiceName
+	reqmsg.Service = module.DownloadService
+	for {
+		data, err := proto.Marshal(&wantfile)
+		if err != nil {
+			return err
+		}
+		reqmsg.Body = data
+		ctx, _ := context.WithTimeout(context.Background(), 90*time.Second)
+		resp, err := client.Call(ctx, &reqmsg)
+		if err != nil {
+			return err
+		}
+
+		var respbody rpc.RespBody
+		err = proto.Unmarshal(resp.Body, &respbody)
+		if err != nil || respbody.Code != 200 {
+			return errors.Wrap(err, "[Error]Download file from CESS reply message"+respbody.Msg+",error")
+		}
+		var blockData rpc.FileDownloadInfo
+		err = proto.Unmarshal(respbody.Data, &blockData)
+		if err != nil {
+			return errors.Wrap(err, "[Error]Download file from CESS error")
+		}
+
+		_, err = file.Write(blockData.Data)
+		if err != nil {
+			return err
+		}
+
+		if blockData.BlockIndex == blockData.BlockTotal {
+			break
+		}
+		wantfile.BlockIndex++
+	}
+	return nil
 }
