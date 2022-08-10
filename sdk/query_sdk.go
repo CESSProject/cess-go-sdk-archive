@@ -98,22 +98,24 @@ func (fs QuerySDK) QueryFile(fileid string) (result.FileInfo, error) {
 	var ci chain.CessInfo
 	ci.RpcAddr = fs.ChainData.CessRpcAddr
 	ci.ChainModule = chain.FindFileChainModule
-
+	ci.PublicKeyOfIdentify, _ = chain.GetPublicKey(fs.ChainData.IdAccountPhraseOrSeed)
 	ci.ChainModuleMethod = chain.FindFileModuleMethod[0]
 	data, err := ci.GetFileInfo(fileid)
 	if err != nil {
 		return fileinfo, errors.Wrap(err, "[Error]Get file:"+fileid+" info fail")
 	}
-	if len(data.File_Name) == 0 {
+	if len(data.Names) == 0 {
 		err = errors.New("[Fail]This file may have been deleted by someone")
 		return fileinfo, err
 	}
-	fileinfo.FileName = string(data.File_Name[:])
-	fileinfo.FileHash = string(data.FileHash[:])
-	fileinfo.Public = bool(data.Public)
-	fileinfo.Backups = int8(data.Backups)
+	for i := 0; i < len(data.Names); i++ {
+		if string(ci.PublicKeyOfIdentify) == string(data.Users[i][:]) {
+			fileinfo.FileName = string(data.Names[i])
+		}
+	}
+
 	fileinfo.FileSize = int64(data.FileSize)
-	fileinfo.Downloadfee = data.Downloadfee.Int64()
+	fileinfo.FileState = string(data.FileState)
 
 	return fileinfo, nil
 }

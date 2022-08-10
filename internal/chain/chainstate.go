@@ -46,11 +46,11 @@ func (ci *CessInfo) UserSpacePackage(AccountPublicKey string) (SpacePackage, err
 	return data, nil
 }
 
-func (userinfo UserHoldSpaceDetails) String() string {
+func (userinfo SpacePackage) String() string {
 	ret := "———————————————————You Purchased Space———————————————————\n"
-	ret += "                   PurchasedSpace:" + userinfo.PurchasedSpace.String() + "(KB)\n"
-	ret += "                   UsedSpace:" + userinfo.UsedSpace.String() + "(KB)\n"
-	ret += "                   RemainingSpace:" + userinfo.RemainingSpace.String() + "(KB)\n"
+	ret += "                   PurchasedSpace:" + userinfo.Space.String() + "(KB)\n"
+	ret += "                   UsedSpace:" + userinfo.Used_space.String() + "(KB)\n"
+	ret += "                   RemainingSpace:" + userinfo.Remaining_space.String() + "(KB)\n"
 	ret += "—————————————————————————————————————————————————————————"
 	return ret
 }
@@ -154,14 +154,11 @@ func (ci *CessInfo) GetFileList(AccountPublicKey string) ([][]byte, error) {
 	return data, nil
 }
 
-func (fileinfo FileInfo) String() string {
+func (fileinfo FileMetaInfo) String() string {
 	ret := "———————————————————File Information———————————————————\n"
-	ret += fmt.Sprintf("                  Filename:%v\n", string(fileinfo.File_Name[:]))
-	ret += fmt.Sprintf("                  Public:%v\n", fileinfo.Public)
-	ret += fmt.Sprintf("                  Filehash:%v\n", string(fileinfo.FileHash[:]))
-	ret += fmt.Sprintf("                  Backups:%v\n", fileinfo.Backups)
+	ret += fmt.Sprintf("                  Filename:%v\n", string(fileinfo.Names[0]))
 	ret += fmt.Sprintf("                  Filesize:%v\n", fileinfo.FileSize)
-	ret += fmt.Sprintf("                  Downloadfee:%v\n", fileinfo.Downloadfee)
+	ret += fmt.Sprintf("                  FileState:%v\n", string(fileinfo.FileState))
 	return ret
 }
 

@@ -21,6 +21,7 @@ require (
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/gtank/merlin v0.1.1 // indirect
 	github.com/gtank/ristretto255 v0.1.2 // indirect
+	github.com/klauspost/reedsolomon v1.10.0
 	github.com/pierrec/xxHash v0.1.5 // indirect
 	github.com/rs/cors v1.8.0 // indirect
 	github.com/vedhavyas/go-subkey v1.0.3 // indirect
