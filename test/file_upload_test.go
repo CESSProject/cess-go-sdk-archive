@@ -13,9 +13,8 @@ func TestFileUpload(t *testing.T) {
 	//When sending a file, send it as a file block of 2kb
 	blocksize := sdk.MB_1 * sdk.BlockSize(1)
 	path := ""
-	backups := ""
 	privatekey := ""
-	fileid, err := file.FileUpload(blocksize, path, backups, privatekey)
+	fileid, err := file.FileUpload(blocksize, path, privatekey)
 	if err != nil {
 		t.Error(err)
 	} else {

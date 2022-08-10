@@ -7,10 +7,11 @@ var (
 	BuySpaceTransactionName   = "FileBank.buy_space"
 	UploadFileTransactionName = "FileBank.upload"
 	DeleteFileTransactionName = "FileBank.delete_file"
+	UploadDeclaration         = "FileBank.upload_declaration"
 
 	//find
-	PurchasedSpaceChainModule  = "FileBank"
-	PurchasedSpaceModuleMethod = "UserHoldSpaceDetails"
+	PurchasedSpaceChainModule = "FileBank"
+	PurchasedPackage          = "PurchasedPackage"
 
 	FindPriceChainModule  = "FileBank"
 	FindPriceModuleMethod = "UnitPrice"
@@ -25,42 +26,40 @@ var (
 type CessInfo struct {
 	RpcAddr               string
 	IdentifyAccountPhrase string
+	PublicKeyOfIdentify   []byte
 	TransactionName       string
 	ChainModule           string
 	ChainModuleMethod     string
 }
 
-type UserHoldSpaceDetails struct {
-	PurchasedSpace types.U128 `json:"purchased_space"`
-	UsedSpace      types.U128 `json:"used_space"`
-	RemainingSpace types.U128 `json:"remaining_space"`
+type SpacePackage struct {
+	Space           types.U128
+	Used_space      types.U128
+	Remaining_space types.U128
+	Tenancy         types.U32
+	Package_type    types.U8
+	Start           types.U32
+	Deadline        types.U32
+	State           types.Bytes
 }
 
-type FileInfo struct {
-	//FileId      types.Bytes         `json:"acc"`         //File id
-	File_Name   types.Bytes         `json:"file_name"`   //File name
-	FileSize    types.U64           `json:"file_size"`   //File size
-	FileHash    types.Bytes         `json:"file_hash"`   //File hash
-	Public      types.Bool          `json:"public"`      //Public or not
-	UserAddr    types.AccountID     `json:"user_addr"`   //Upload user's address
-	FileState   types.Bytes         `json:"file_state"`  //File state
-	Backups     types.U8            `json:"backups"`     //Number of backups
-	Downloadfee types.U128          `json:"downloadfee"` //Download fee
-	FileDupl    []FileDuplicateInfo `json:"file_dupl"`   //File backup information list
+//---FileMetaInfo
+type FileMetaInfo struct {
+	FileSize  types.U64
+	Index     types.U32
+	FileState types.Bytes
+	Users     []types.AccountID
+	Names     []types.Bytes
+	ChunkInfo []ChunkInfo
 }
-type FileDuplicateInfo struct {
+
+type ChunkInfo struct {
 	MinerId   types.U64
+	ChunkSize types.U64
 	BlockNum  types.U32
-	ScanSize  types.U32
-	Acc       types.AccountID
+	ChunkId   types.Bytes
 	MinerIp   types.Bytes
-	DuplId    types.Bytes
-	RandKey   types.Bytes
-	BlockInfo []BlockInfo
-}
-type BlockInfo struct {
-	BlockIndex types.Bytes
-	BlockSize  types.U32
+	MinerAcc  types.AccountID
 }
 
 type FileList struct {

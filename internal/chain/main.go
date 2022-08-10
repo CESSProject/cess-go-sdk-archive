@@ -2,9 +2,10 @@ package chain
 
 import (
 	"fmt"
-	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v4"
 	"sync"
 	"time"
+
+	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v4"
 )
 
 type mySubstrateApi struct {
@@ -17,13 +18,14 @@ var api mySubstrateApi
 //Initialize the chain connection handle
 func Chain_Init(CessRpcAddr string) error {
 	var err error
-
-	api.r, err = gsrpc.NewSubstrateAPI(CessRpcAddr)
-	if err != nil {
-		fmt.Printf("[Error]Problem with chain rpc:%s\n", err)
-		return err
+	if api.r == nil {
+		api.r, err = gsrpc.NewSubstrateAPI(CessRpcAddr)
+		if err != nil {
+			fmt.Printf("[Error]Problem with chain rpc:%s\n", err)
+			return err
+		}
+		go substrateAPIKeepAlive(CessRpcAddr)
 	}
-	go substrateAPIKeepAlive(CessRpcAddr)
 	return nil
 }
 

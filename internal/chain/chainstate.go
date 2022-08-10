@@ -2,15 +2,17 @@ package chain
 
 import (
 	"fmt"
+
+	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/pkg/errors"
 )
 
 //UserHoldSpaceDetails means to get specific information about user space
-func (ci *CessInfo) UserHoldSpaceDetails(AccountPublicKey string) (UserHoldSpaceDetails, error) {
+func (ci *CessInfo) UserSpacePackage(AccountPublicKey string) (SpacePackage, error) {
 	var (
 		err  error
-		data UserHoldSpaceDetails
+		data SpacePackage
 	)
 	api.getSubstrateApiSafe()
 	defer func() {
@@ -34,18 +36,21 @@ func (ci *CessInfo) UserHoldSpaceDetails(AccountPublicKey string) (UserHoldSpace
 		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", ci.ChainModule, ci.ChainModuleMethod)
 	}
 
-	_, err = api.r.RPC.State.GetStorageLatest(key, &data)
+	ok, err := api.r.RPC.State.GetStorageLatest(key, &data)
 	if err != nil {
 		return data, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", ci.ChainModule, ci.ChainModuleMethod)
+	}
+	if !ok {
+		return data, errors.New("Empty")
 	}
 	return data, nil
 }
 
-func (userinfo UserHoldSpaceDetails) String() string {
+func (userinfo SpacePackage) String() string {
 	ret := "———————————————————You Purchased Space———————————————————\n"
-	ret += "                   PurchasedSpace:" + userinfo.PurchasedSpace.String() + "(KB)\n"
-	ret += "                   UsedSpace:" + userinfo.UsedSpace.String() + "(KB)\n"
-	ret += "                   RemainingSpace:" + userinfo.RemainingSpace.String() + "(KB)\n"
+	ret += "                   PurchasedSpace:" + userinfo.Space.String() + "(KB)\n"
+	ret += "                   UsedSpace:" + userinfo.Used_space.String() + "(KB)\n"
+	ret += "                   RemainingSpace:" + userinfo.Remaining_space.String() + "(KB)\n"
 	ret += "—————————————————————————————————————————————————————————"
 	return ret
 }
@@ -82,10 +87,10 @@ func (ci *CessInfo) GetPrice() (types.U128, error) {
 }
 
 //GetFileInfo means to get the specific information of the file through the current fileid
-func (ci *CessInfo) GetFileInfo(fileid string) (FileInfo, error) {
+func (ci *CessInfo) GetFileInfo(fileid string) (FileMetaInfo, error) {
 	var (
 		err  error
-		data FileInfo
+		data FileMetaInfo
 	)
 
 	api.getSubstrateApiSafe()
@@ -109,7 +114,7 @@ func (ci *CessInfo) GetFileInfo(fileid string) (FileInfo, error) {
 
 	_, err = api.r.RPC.State.GetStorageLatest(key, &data)
 	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", ci.ChainModule, ci.ChainModuleMethod)
+		return data, errors.New("Empty")
 	}
 	return data, nil
 }
@@ -149,14 +154,11 @@ func (ci *CessInfo) GetFileList(AccountPublicKey string) ([][]byte, error) {
 	return data, nil
 }
 
-func (fileinfo FileInfo) String() string {
+func (fileinfo FileMetaInfo) String() string {
 	ret := "———————————————————File Information———————————————————\n"
-	ret += fmt.Sprintf("                  Filename:%v\n", string(fileinfo.File_Name[:]))
-	ret += fmt.Sprintf("                  Public:%v\n", fileinfo.Public)
-	ret += fmt.Sprintf("                  Filehash:%v\n", string(fileinfo.FileHash[:]))
-	ret += fmt.Sprintf("                  Backups:%v\n", fileinfo.Backups)
+	ret += fmt.Sprintf("                  Filename:%v\n", string(fileinfo.Names[0]))
 	ret += fmt.Sprintf("                  Filesize:%v\n", fileinfo.FileSize)
-	ret += fmt.Sprintf("                  Downloadfee:%v\n", fileinfo.Downloadfee)
+	ret += fmt.Sprintf("                  FileState:%v\n", string(fileinfo.FileState))
 	return ret
 }
 
@@ -193,4 +195,12 @@ func (ci *CessInfo) GetSchedulerInfo() ([]SchedulerInfo, error) {
 		return data, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", ci.ChainModule, ci.ChainModuleMethod)
 	}
 	return data, nil
+}
+
+func GetPublicKey(privatekey string) ([]byte, error) {
+	kring, err := signature.KeyringPairFromSecret(privatekey, 0)
+	if err != nil {
+		return nil, err
+	}
+	return kring.PublicKey, nil
 }
