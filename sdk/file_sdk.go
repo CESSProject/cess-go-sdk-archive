@@ -236,11 +236,15 @@ func (fs FileSDK) FileDownload(fileid, installpath string) error {
 	for i := 0; i < len(fmeta.ChunkInfo); i++ {
 		// Download the file from the scheduler service
 		fname := filepath.Join(installpath, string(fmeta.ChunkInfo[i].ChunkId))
-		downloadFromStorage(fname, string(fmeta.ChunkInfo[i].MinerIp))
+		err = downloadFromStorage(fname, string(fmeta.ChunkInfo[i].MinerIp))
+		if err != nil {
+			fmt.Printf("Error downloading %drd shard: %v", i, err)
+		}
 	}
 
 	r := len(fmeta.ChunkInfo) / 3
 	d := len(fmeta.ChunkInfo) - r
+
 	err = fileHandling.ReedSolomon_Restore(installpath, fileid, d, r)
 	if err != nil {
 		return errors.New("[Tips]The file " + fileid + " download failed, please try again later")
@@ -399,8 +403,8 @@ func downloadFromStorage(fpath string, mip string) error {
 	wantfile.BlockIndex = 1
 
 	reqmsg := rpc.ReqMsg{}
-	reqmsg.Method = module.MinerServiceName
-	reqmsg.Service = module.DownloadService
+	reqmsg.Method = module.DownloadService
+	reqmsg.Service = module.MinerServiceName
 	for {
 		data, err := proto.Marshal(&wantfile)
 		if err != nil {
@@ -423,7 +427,9 @@ func downloadFromStorage(fpath string, mip string) error {
 		if err != nil {
 			return errors.Wrap(err, "[Error]Download file from CESS error")
 		}
-
+		if len(blockData.Data) == 0 {
+			return errors.New("empty data")
+		}
 		_, err = file.Write(blockData.Data)
 		if err != nil {
 			return err
@@ -434,5 +440,6 @@ func downloadFromStorage(fpath string, mip string) error {
 		}
 		wantfile.BlockIndex++
 	}
-	return nil
+	err = file.Sync()
+	return err
 }
