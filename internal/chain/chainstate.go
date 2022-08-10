@@ -2,6 +2,8 @@ package chain
 
 import (
 	"fmt"
+
+	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/pkg/errors"
 )
@@ -193,4 +195,12 @@ func (ci *CessInfo) GetSchedulerInfo() ([]SchedulerInfo, error) {
 		return data, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", ci.ChainModule, ci.ChainModuleMethod)
 	}
 	return data, nil
+}
+
+func GetPublicKey(privatekey string) ([]byte, error) {
+	kring, err := signature.KeyringPairFromSecret(privatekey, 0)
+	if err != nil {
+		return nil, err
+	}
+	return kring.PublicKey, nil
 }

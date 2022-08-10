@@ -7,17 +7,16 @@ import (
 	"cess-go-sdk/module"
 	"cess-go-sdk/tools"
 	"context"
-	"fmt"
-	"github.com/btcsuite/btcutil/base58"
-	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 	"io/ioutil"
-	"math/big"
 	"os"
 	"path/filepath"
-	"strconv"
 	"sync"
 	"time"
+
+	cesskeyring "github.com/CESSProject/go-keyring"
+	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
+	"storj.io/common/base58"
 )
 
 type FileSDK struct {
@@ -29,6 +28,7 @@ type FileOperate interface {
 	FileDelete(string) error
 	FileDecrypt(string, string, string) error
 	FileEncrypt(string, string, string) error
+	UploadDeclaration(string, string, string) (string, error)
 }
 
 type BlockSize = int64
@@ -45,86 +45,92 @@ path:The absolute path of the file to be uploaded
 backups:Number of backups of files that need to be uploaded
 privatekey:Encrypted password for uploaded files
 */
-func (fs FileSDK) FileUpload(block BlockSize, path, backups, privatekey string) (string, error) {
+func (fs FileSDK) FileUpload(block BlockSize, fpath, privatekey string) (string, error) {
 	blocksize := int(block)
 	err := chain.Chain_Init(fs.ChainData.CessRpcAddr)
 	if err != nil {
 		return "", err
 	}
-	file, err := os.Stat(path)
+	fstat, err := os.Stat(fpath)
 	if err != nil {
 		return "", errors.Wrap(err, "[Error]Please enter the correct file path")
 	}
 
-	if file.IsDir() {
+	if fstat.IsDir() {
 		return "", errors.Wrap(err, "[Error]Please do not upload the folder")
 	}
 
-	spares, err := strconv.Atoi(backups)
-	if err != nil {
-		return "", errors.Wrap(err, "[Error]Please enter a correct integer")
-
-	}
-
-	filehash, err := tools.CalcFileHash(path)
+	//Calc file hash
+	hash, err := tools.CalcFileHashByChunks(fpath, 1024*1024*1024)
 	if err != nil {
 		return "", errors.Wrap(err, "[Error]There is a problem with the file, please replace it")
 	}
+	fileid := "cess" + hash
 
-	fileid, err := tools.GetGuid(1)
-	if err != nil {
-		return "", errors.Wrap(err, "[Error]Create snowflake fail")
-	}
-	if backups == "0" {
-		return fileid, errors.New("The number of backups must be bigger than 1")
-	}
 	if len(privatekey) != 16 && len(privatekey) != 24 && len(privatekey) != 32 && len(privatekey) != 0 {
 		return fileid, errors.New("[Error]The password must be 16,24,32 bits long")
-	}
-	var blockinfo module.FileUploadInfo
-	blockinfo.Backups = backups
-	blockinfo.FileId = fileid
-	blockinfo.BlockSize = int32(file.Size())
-	blockinfo.FileHash = filehash
-
-	blocktotal := 0
-
-	f, err := os.Open(path)
-	if err != nil {
-		return "", errors.Wrap(err, "[Error]This file was broken")
-	}
-	defer f.Close()
-	filebyte, err := ioutil.ReadAll(f)
-	if err != nil {
-		return "", errors.Wrap(err, "[Error]analyze this file error")
 	}
 
 	var ci chain.CessInfo
 	ci.RpcAddr = fs.ChainData.CessRpcAddr
 	ci.ChainModule = chain.FindSchedulerInfoModule
 	ci.ChainModuleMethod = chain.FindSchedulerInfoMethod
+	ci.TransactionName = chain.UploadDeclaration
+	ci.IdentifyAccountPhrase = fs.ChainData.IdAccountPhraseOrSeed
+	ci.PublicKeyOfIdentify, err = chain.GetPublicKey(fs.ChainData.IdAccountPhraseOrSeed)
+	if err != nil {
+		return "", errors.Wrap(err, "[Error]private key error")
+	}
+	txhash, err := ci.UploadDeclaration(fileid, fstat.Name())
+	if txhash == "" {
+		return "", errors.Wrap(err, "[Error]UploadDeclaration error")
+	}
+
+	var encodefile []byte
+	var fsize = int(fstat.Size())
+	f, err := os.Open(fpath)
+	if err != nil {
+		return "", errors.Wrap(err, "[Error]This file was broken")
+	}
+	filebyte, err := ioutil.ReadAll(f)
+	if err != nil {
+		f.Close()
+		return "", errors.Wrap(err, "[Error]analyze this file error")
+	}
+	f.Close()
+	if len(privatekey) != 0 {
+		encodefile, err = tools.AesEncrypt(filebyte, []byte(privatekey))
+		if err != nil {
+			return fileid, errors.Wrap(err, "[Error]Encode the file fail ,error")
+		}
+		fsize = len(encodefile)
+	}
+
+	var authreq rpc.AuthReq
+	authreq.FileId = fileid
+	authreq.FileName = fstat.Name()
+	authreq.FileSize = uint64(fsize)
+	authreq.BlockTotal = uint32(fsize / blocksize)
+	if fsize%blocksize != 0 {
+		authreq.BlockTotal += 1
+	}
+	authreq.PublicKey = ci.PublicKeyOfIdentify
+
+	authreq.Msg = []byte(tools.GetRandomcode(16))
+	kr, _ := cesskeyring.FromURI(fs.ChainData.IdAccountPhraseOrSeed, cesskeyring.NetSubstrate{})
+	// sign message
+	sign, err := kr.Sign(kr.SigningContext(authreq.Msg))
+	if err != nil {
+		return "", errors.Wrap(err, "[Error]Calc sign error")
+	}
+	authreq.Sign = sign[:]
+
 	schds, err := ci.GetSchedulerInfo()
 	if err != nil {
 		return "", errors.Wrap(err, "[Error]Get scheduler randomly error")
 	}
-	//filesize := new(big.Int)
-	fee := new(big.Int)
 
-	ci.IdentifyAccountPhrase = fs.ChainData.IdAccountPhraseOrSeed
-	ci.TransactionName = chain.UploadFileTransactionName
-
-	//if file.Size()/1024 == 0 {
-	//	filesize.SetInt64(1)
-	//} else {
-	//	filesize.SetInt64(file.Size() / 1024)
-	//}
-	fee.SetInt64(int64(0))
-
-	_, err = ci.UploadFileMetaInformation(fileid, file.Name(), filehash, privatekey == "", uint8(spares), uint64(file.Size()), fee, fs.ChainData.WalletAddress)
-	if err != nil {
-		return "", errors.Wrap(err, "[Error]Upload file meta information error")
-	}
-
+	//auth
 	var client *rpc.Client
 	for i, schd := range schds {
 		wsURL := "ws://" + string(base58.Decode(string(schd.Ip)))
@@ -141,87 +147,54 @@ func (fs FileSDK) FileUpload(block BlockSize, path, backups, privatekey string) 
 			break
 		}
 	}
-	sp := sync.Pool{
-		New: func() interface{} {
-			return &rpc.ReqMsg{}
-		},
+
+	bob, err := proto.Marshal(&authreq)
+	if err != nil {
+		return "", errors.Wrap(err, "[Error]")
 	}
-	commit := func(num int, data []byte) error {
-		blockinfo.BlockIndex = int32(num) + 1
-		blockinfo.Data = data
-		info, err := proto.Marshal(&blockinfo)
-		if err != nil {
-			return errors.Wrap(err, "[Error]Serialization error, please upload again")
-		}
-		reqmsg := sp.Get().(*rpc.ReqMsg)
-		reqmsg.Body = info
-		reqmsg.Method = module.UploadService
-		reqmsg.Service = module.CtlServiceName
-
-		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
-		resp, err := client.Call(ctx, reqmsg)
-		defer cancel()
-		if err != nil {
-			return errors.Wrap(err, "[Error]Failed to transfer file to scheduler,error")
-		}
-
-		var res rpc.RespBody
-		err = proto.Unmarshal(resp.Body, &res)
-		if err != nil {
-			return errors.Wrap(err, "[Error]Error getting reply from schedule, transfer failed")
-		}
-		if res.Code != 200 {
-			err = errors.New(res.Msg)
-			return errors.Wrap(err, "[Error]Upload file fail!scheduler problem")
-		}
-		sp.Put(reqmsg)
-		return nil
+	data, code, err := WriteData(client, module.CtlServiceName, module.UploadAuth, bob)
+	if err != nil {
+		return "", errors.Wrap(err, "[Error]")
+	}
+	if code == 201 {
+		return fileid, nil
+	}
+	if code != 200 {
+		return "", errors.Errorf("[Error]Auth return code %v", code)
 	}
 
-	if len(privatekey) != 0 {
-		encodefile, err := tools.AesEncrypt(filebyte, []byte(privatekey))
+	var filereq rpc.FileUploadReq
+	var n int
+	var buf = make([]byte, blocksize)
+	filereq.Auth = data
+	if len(privatekey) == 0 {
+		f, err = os.Open(fpath)
 		if err != nil {
-			return fileid, errors.Wrap(err, "[Error]Encode the file fail ,error")
+			return "", errors.Wrap(err, "[Error]This file was broken")
 		}
-		blocks := len(encodefile) / blocksize
-		if len(encodefile)%blocksize == 0 {
-			blocktotal = blocks
+	}
+	for i := 0; i < int(authreq.BlockTotal); i++ {
+		filereq.BlockIndex = uint32(i + 1)
+		if len(privatekey) == 0 {
+			f.Seek(int64(i*blocksize), 0)
+			n, _ = f.Read(buf)
+			filereq.FileData = buf[:n]
 		} else {
-			blocktotal = blocks + 1
-		}
-		blockinfo.BlockTotal = int32(blocktotal)
-		for i := 0; i < blocktotal; i++ {
-			block := make([]byte, 0)
-			if blocks != i {
-				block = encodefile[i*blocksize : (i+1)*blocksize]
+			if (i+1)*blocksize > fsize {
+				filereq.FileData = encodefile[i*blocksize:]
 			} else {
-				block = encodefile[i*blocksize:]
-			}
-			err = commit(i, block)
-			if err != nil {
-				return fileid, errors.Wrap(err, "[Error]:Failed to upload the file error")
+				filereq.FileData = encodefile[i*blocksize : (i+1)*blocksize]
 			}
 		}
-	} else {
-		fmt.Printf("%s[Tips]%s:upload file:%s without private key", tools.Yellow, tools.Reset, path)
-		blocks := len(filebyte) / blocksize
-		if len(filebyte)%blocksize == 0 {
-			blocktotal = blocks
-		} else {
-			blocktotal = blocks + 1
+
+		bob, err := proto.Marshal(&filereq)
+		if err != nil {
+			return "", errors.Wrap(err, "[Error]")
 		}
-		blockinfo.BlockTotal = int32(blocktotal)
-		for i := 0; i < blocktotal; i++ {
-			block := make([]byte, 0)
-			if blocks != i {
-				block = filebyte[i*blocksize : (i+1)*blocksize]
-			} else {
-				block = filebyte[i*blocksize:]
-			}
-			err = commit(i, block)
-			if err != nil {
-				return fileid, errors.Wrap(err, "[Error]:Failed to upload the file error")
-			}
+
+		_, _, err = WriteData(client, module.CtlServiceName, module.UploadService, bob)
+		if err != nil {
+			return "", errors.Wrap(err, "[Error]")
 		}
 	}
 	return fileid, nil
@@ -456,4 +429,24 @@ func (fs FileSDK) FileEncrypt(encryptpath, savepath, password string) error {
 	}
 
 	return nil
+}
+
+func WriteData(cli *rpc.Client, service, method string, body []byte) ([]byte, int32, error) {
+	req := &rpc.ReqMsg{
+		Service: service,
+		Method:  method,
+		Body:    body,
+	}
+	ctx, _ := context.WithTimeout(context.Background(), 90*time.Second)
+	resp, err := cli.Call(ctx, req)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "Call err:")
+	}
+
+	var b rpc.RespBody
+	err = proto.Unmarshal(resp.Body, &b)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "Unmarshal:")
+	}
+	return b.Data, b.Code, err
 }

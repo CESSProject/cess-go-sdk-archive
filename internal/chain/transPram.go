@@ -7,6 +7,7 @@ var (
 	BuySpaceTransactionName   = "FileBank.buy_space"
 	UploadFileTransactionName = "FileBank.upload"
 	DeleteFileTransactionName = "FileBank.delete_file"
+	UploadDeclaration         = "FileBank.upload_declaration"
 
 	//find
 	PurchasedSpaceChainModule  = "FileBank"
@@ -25,6 +26,7 @@ var (
 type CessInfo struct {
 	RpcAddr               string
 	IdentifyAccountPhrase string
+	PublicKeyOfIdentify   []byte
 	TransactionName       string
 	ChainModule           string
 	ChainModuleMethod     string

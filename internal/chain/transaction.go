@@ -2,11 +2,12 @@ package chain
 
 import (
 	"fmt"
+	"math/big"
+	"time"
+
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/pkg/errors"
-	"math/big"
-	"time"
 )
 
 //BuySpaceOnChain means initiating a transaction to purchase data on the chain
@@ -358,6 +359,120 @@ func (ci *CessInfo) DeleteFileOnChain(fileid string) error {
 			return errors.Errorf("[%v] tx timeout", ci.TransactionName)
 		default:
 			time.Sleep(time.Second)
+		}
+	}
+}
+
+func (ci *CessInfo) UploadDeclaration(filehash, filename string) (string, error) {
+	api.getSubstrateApiSafe()
+	defer func() {
+		api.releaseSubstrateApi()
+		if err := recover(); err != nil {
+			fmt.Printf("[Error] Upload Declaration panic :%s\n", err)
+		}
+	}()
+
+	var txhash string
+	var accountInfo types.AccountInfo
+
+	meta, err := api.r.RPC.State.GetMetadataLatest()
+	if err != nil {
+		return txhash, errors.Wrap(err, "GetMetadataLatest err")
+	}
+
+	c, err := types.NewCall(meta, ci.TransactionName, types.NewBytes([]byte(filehash)), types.NewBytes([]byte(filename)))
+	if err != nil {
+		return txhash, errors.Wrap(err, "[NewCall]")
+	}
+
+	ext := types.NewExtrinsic(c)
+	if err != nil {
+		return txhash, errors.Wrap(err, "[NewExtrinsic]")
+	}
+
+	genesisHash, err := api.r.RPC.Chain.GetBlockHash(0)
+	if err != nil {
+		return txhash, errors.Wrap(err, "GetBlockHash")
+	}
+
+	rv, err := api.r.RPC.State.GetRuntimeVersionLatest()
+	if err != nil {
+		return txhash, errors.Wrap(err, "GetRuntimeVersionLatest err")
+	}
+
+	keyring, err := signature.KeyringPairFromSecret(ci.IdentifyAccountPhrase, 0)
+	if err != nil {
+		return txhash, errors.Wrap(err, "KeyringPairFromSecret err")
+	}
+
+	key, err := types.CreateStorageKey(meta, "System", "Account", keyring.PublicKey, nil)
+	if err != nil {
+		return txhash, errors.Wrap(err, "[CreateStorageKey]")
+	}
+
+	ok, err := api.r.RPC.State.GetStorageLatest(key, &accountInfo)
+	if err != nil {
+		return txhash, errors.Wrap(err, "[GetStorageLatest]")
+	}
+
+	if !ok {
+		return txhash, errors.New("GetStorageLatest return value is empty")
+	}
+
+	o := types.SignatureOptions{
+		BlockHash:          genesisHash,
+		Era:                types.ExtrinsicEra{IsMortalEra: false},
+		GenesisHash:        genesisHash,
+		Nonce:              types.NewUCompactFromUInt(uint64(accountInfo.Nonce)),
+		SpecVersion:        rv.SpecVersion,
+		Tip:                types.NewUCompactFromUInt(0),
+		TransactionVersion: rv.TransactionVersion,
+	}
+
+	// Sign the transaction
+	err = ext.Sign(keyring, o)
+	if err != nil {
+		return txhash, errors.Wrap(err, "[Sign]")
+	}
+
+	// Do the transfer and track the actual status
+	sub, err := api.r.RPC.Author.SubmitAndWatchExtrinsic(ext)
+	if err != nil {
+		return txhash, errors.Wrap(err, "[SubmitAndWatchExtrinsic]")
+	}
+	defer sub.Unsubscribe()
+	timeout := time.After(10 * time.Second)
+	for {
+		select {
+		case status := <-sub.Chan():
+			if status.IsInBlock {
+				events := MyEventRecords{}
+				txhash, _ = types.EncodeToHexString(status.AsInBlock)
+				keye, err := types.CreateStorageKey(meta, "System", "Events", nil)
+				if err != nil {
+					return txhash, errors.Wrap(err, "CreateStorageKey Events err")
+				}
+				h, err := api.r.RPC.State.GetStorageRaw(keye, status.AsInBlock)
+				if err != nil {
+					return txhash, errors.Wrap(err, "GetStorageRaw")
+				}
+
+				err = types.EventRecordsRaw(*h).DecodeEventRecords(meta, &events)
+				if err != nil {
+					errors.Wrap(err, "DecodeEvent err")
+					return txhash, err
+				}
+
+				if events.FileBank_UploadDeclaration != nil {
+					return txhash, nil
+				} else {
+					return txhash, errors.Errorf("Delete file info on chain fail!")
+				}
+			}
+		case err = <-sub.Err():
+			return txhash, errors.Wrap(err, "<-sub")
+		case <-timeout:
+			return txhash, errors.Errorf("[%v] tx timeout", ci.TransactionName)
 		}
 	}
 }

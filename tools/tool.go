@@ -7,14 +7,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/btcsuite/btcutil/base58"
-	"github.com/bwmarrin/snowflake"
-	"golang.org/x/crypto/blake2b"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"mime/multipart"
 	"net/http"
 	"os"
+	"time"
+
+	"github.com/bwmarrin/snowflake"
+	"golang.org/x/crypto/blake2b"
+	"storj.io/common/base58"
 )
 
 var (
@@ -185,6 +188,18 @@ func CalcFileHash(filepath string) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
+func CalcHash(data []byte) (string, error) {
+	if len(data) <= 0 {
+		return "", errors.New("data is nil")
+	}
+	h := sha256.New()
+	_, err := h.Write(data)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
 //Get file unique identifier
 func GetGuid(num int64) (string, error) {
 	node, err := snowflake.NewNode(num)
@@ -314,4 +329,57 @@ func VerityAddress(address string, prefix []byte) error {
 		return errors.New("decode public key length is not equal 32")
 	}
 	return nil
+}
+
+func CalcFileHashByChunks(fpath string, chunksize int64) (string, error) {
+	if chunksize <= 0 {
+		return "", errors.New("Invalid chunk size")
+	}
+	fstat, err := os.Stat(fpath)
+	if err != nil {
+		return "", err
+	}
+	chunkNum := fstat.Size() / chunksize
+	if fstat.Size()%chunksize != 0 {
+		chunkNum++
+	}
+	var n int
+	var chunkhash, allhash, filehash string
+	var buf = make([]byte, chunksize)
+	f, err := os.OpenFile(fpath, os.O_RDONLY, os.ModePerm)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	for i := int64(0); i < chunkNum; i++ {
+		f.Seek(i*chunksize, 0)
+		n, err = f.Read(buf)
+		if err != nil && err != io.EOF {
+			return "", err
+		}
+		chunkhash, err = CalcHash(buf[:n])
+		if err != nil {
+			return "", err
+		}
+		allhash += chunkhash
+	}
+	filehash, err = CalcHash([]byte(allhash))
+	if err != nil {
+		return "", err
+	}
+	return filehash, nil
+}
+
+//  ----------------------- Random key -----------------------
+const baseStr = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()[]{}+-*/_=."
+
+// Generate random password
+func GetRandomcode(length uint8) string {
+	r := rand.New(rand.NewSource(time.Now().UnixNano() + rand.Int63()))
+	bytes := make([]byte, length)
+	l := len(baseStr)
+	for i := uint8(0); i < length; i++ {
+		bytes[i] = baseStr[r.Intn(l)]
+	}
+	return string(bytes)
 }
