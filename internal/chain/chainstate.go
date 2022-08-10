@@ -9,10 +9,10 @@ import (
 )
 
 //UserHoldSpaceDetails means to get specific information about user space
-func (ci *CessInfo) UserHoldSpaceDetails(AccountPublicKey string) (UserHoldSpaceDetails, error) {
+func (ci *CessInfo) UserSpacePackage(AccountPublicKey string) (SpacePackage, error) {
 	var (
 		err  error
-		data UserHoldSpaceDetails
+		data SpacePackage
 	)
 	api.getSubstrateApiSafe()
 	defer func() {
@@ -36,9 +36,12 @@ func (ci *CessInfo) UserHoldSpaceDetails(AccountPublicKey string) (UserHoldSpace
 		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", ci.ChainModule, ci.ChainModuleMethod)
 	}
 
-	_, err = api.r.RPC.State.GetStorageLatest(key, &data)
+	ok, err := api.r.RPC.State.GetStorageLatest(key, &data)
 	if err != nil {
 		return data, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", ci.ChainModule, ci.ChainModuleMethod)
+	}
+	if !ok {
+		return data, errors.New("Empty")
 	}
 	return data, nil
 }

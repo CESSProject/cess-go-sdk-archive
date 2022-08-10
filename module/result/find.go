@@ -1,9 +1,13 @@
 package result
 
-type UserHoldSpaceDetails struct {
-	PurchasedSpace string `json:"purchased_space"`
-	UsedSpace      string `json:"used_space"`
-	RemainingSpace string `json:"remaining_space"`
+type UserSpaceDetails struct {
+	TotalSpace     string
+	UsedSpace      string
+	RemainingSpace string
+	Package_type   uint8
+	Start          uint32
+	Deadline       uint32
+	State          string
 }
 
 type FileInfo struct {

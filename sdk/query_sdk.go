@@ -6,8 +6,9 @@ import (
 	"cess-go-sdk/module/result"
 	"cess-go-sdk/tools"
 	"fmt"
-	"github.com/pkg/errors"
 	"strconv"
+
+	"github.com/pkg/errors"
 )
 
 type QuerySDK struct {
@@ -15,7 +16,7 @@ type QuerySDK struct {
 }
 
 type QueryOperate interface {
-	QueryPurchasedSpace() (result.UserHoldSpaceDetails, error)
+	QueryPurchasedSpace() (result.UserSpaceDetails, error)
 	QueryPrice() (float64, error)
 	QueryFile(string) (result.FileInfo, error)
 	QueryFileList() ([]result.FindFileList, error)
@@ -24,8 +25,8 @@ type QueryOperate interface {
 /*
 FindPurchasedSpace means to query the space that the current user has purchased and the space that has been used
 */
-func (fs QuerySDK) QueryPurchasedSpace() (result.UserHoldSpaceDetails, error) {
-	var userinfo result.UserHoldSpaceDetails
+func (fs QuerySDK) QueryPurchasedSpace() (result.UserSpaceDetails, error) {
+	var userinfo result.UserSpaceDetails
 	err := chain.Chain_Init(fs.ChainData.CessRpcAddr)
 	if err != nil {
 		return userinfo, err
@@ -34,35 +35,33 @@ func (fs QuerySDK) QueryPurchasedSpace() (result.UserHoldSpaceDetails, error) {
 	var ci chain.CessInfo
 	ci.RpcAddr = fs.ChainData.CessRpcAddr
 	ci.ChainModule = chain.PurchasedSpaceChainModule
-	ci.ChainModuleMethod = chain.PurchasedSpaceModuleMethod
+	ci.ChainModuleMethod = chain.PurchasedPackage
 	pubkey, err := tools.DecodeToPub(fs.ChainData.WalletAddress, tools.ChainCessTestPrefix)
 	if err != nil {
 		errors.Wrap(err, "[Error]The wallet address you entered is incorrect, please re-enter")
 		return userinfo, err
 	}
-	details, err := ci.UserHoldSpaceDetails(tools.PubBytesTo0XString(pubkey))
+	details, err := ci.UserSpacePackage(tools.PubBytesTo0XString(pubkey))
 	if err != nil {
+		if err.Error() == "Empty" {
+			return userinfo, errors.Wrap(err, "Not Found")
+		}
 		return userinfo, errors.Wrap(err, "[Error]Get user data fail")
 	}
-	PurchasedSpace, UsedSpace, RemainingSpace := int64(0), int64(0), int64(0)
-	if details.UsedSpace.Int != nil {
-		UsedSpace = details.UsedSpace.Int64()
-	}
-	if details.PurchasedSpace.Int != nil {
-		PurchasedSpace = details.PurchasedSpace.Int64()
-	}
-	if details.RemainingSpace.Int != nil {
-		RemainingSpace = details.RemainingSpace.Int64()
-	}
-	if UsedSpace/1024/1024 == 0 && UsedSpace != 0 {
-		UsedSpace = 0
-	} else {
-		UsedSpace = UsedSpace / 1024 / 1024
-	}
 
-	userinfo.PurchasedSpace = strconv.FormatInt(PurchasedSpace/1024/1024, 10)
-	userinfo.UsedSpace = strconv.FormatInt(UsedSpace, 10)
-	userinfo.RemainingSpace = strconv.FormatInt(RemainingSpace/1024/1024, 10)
+	if details.Space.Uint64 != nil {
+		userinfo.TotalSpace = fmt.Sprintf("%d", details.Space.Uint64())
+		userinfo.UsedSpace = fmt.Sprintf("%d", details.Used_space.Uint64())
+		userinfo.RemainingSpace = fmt.Sprintf("%d", details.Remaining_space.Uint64())
+	} else {
+		userinfo.TotalSpace = details.Space.String()
+		userinfo.UsedSpace = details.Used_space.String()
+		userinfo.RemainingSpace = details.Remaining_space.String()
+	}
+	userinfo.Package_type = uint8(details.Package_type)
+	userinfo.Start = uint32(details.Start)
+	userinfo.Deadline = uint32(details.Deadline)
+	userinfo.State = string(details.State)
 	return userinfo, nil
 }
 

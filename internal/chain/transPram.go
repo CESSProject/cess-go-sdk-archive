@@ -10,8 +10,8 @@ var (
 	UploadDeclaration         = "FileBank.upload_declaration"
 
 	//find
-	PurchasedSpaceChainModule  = "FileBank"
-	PurchasedSpaceModuleMethod = "UserHoldSpaceDetails"
+	PurchasedSpaceChainModule = "FileBank"
+	PurchasedPackage          = "PurchasedPackage"
 
 	FindPriceChainModule  = "FileBank"
 	FindPriceModuleMethod = "UnitPrice"
@@ -32,10 +32,15 @@ type CessInfo struct {
 	ChainModuleMethod     string
 }
 
-type UserHoldSpaceDetails struct {
-	PurchasedSpace types.U128 `json:"purchased_space"`
-	UsedSpace      types.U128 `json:"used_space"`
-	RemainingSpace types.U128 `json:"remaining_space"`
+type SpacePackage struct {
+	Space           types.U128
+	Used_space      types.U128
+	Remaining_space types.U128
+	Tenancy         types.U32
+	Package_type    types.U8
+	Start           types.U32
+	Deadline        types.U32
+	State           types.Bytes
 }
 
 //---FileMetaInfo
